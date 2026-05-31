@@ -1,16 +1,57 @@
+# Dependencies
 node_modules
-.DS_Store
+.pnpm-store
+jspm_packages
+
+# Build outputs
 dist
 dist-ssr
-*.local
-.env
+.output
 .nitro
+.vinxi
+out
+build
+
+# IDEs / Editors
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea
+*.swp
+*.swo
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+*.local
+
+# Tools / Caches
+.content-collections
 .tanstack
 .wrangler
-.output
-.vinxi
+.eslintcache
+*.tsbuildinfo
 __unconfig*
+
+# Local data / Temporary files
 todos.json
 mcp-todos.json
-# Local Netlify folder
 .netlify
+
+# Vite
+.vite
