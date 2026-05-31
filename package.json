@@ -82,7 +82,12 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild",
-      "lightningcss"
+      "lightningcss",
+      "@google/genai",
+      "@parcel/watcher",
+      "protobufjs",
+      "sharp",
+      "unrs-resolver"
     ]
   }
 }
