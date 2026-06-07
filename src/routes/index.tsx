@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { marked } from 'marked'
 
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { allJobs, allEducations } from 'content-collections'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Checkbox } from '#/components/ui/checkbox'
@@ -38,6 +38,8 @@ function App() {
       selectedTags.some((tag) => job.tags.includes(tag)),
     )
   }, [selectedTags])
+
+  window.location.href = '/auth/login'
 
   return (
     <>
