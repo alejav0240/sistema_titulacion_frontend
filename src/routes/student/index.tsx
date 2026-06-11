@@ -3,10 +3,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import {
   CheckCircle2,
+  ExternalLink,
   FileText,
+  History,
   Loader2,
   PlusCircle,
   School,
+  Upload,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -16,6 +19,8 @@ import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
 import api from '#/lib/api'
+import { useCreateVersion, useVersiones } from '#/hooks/useVersions'
+import type { Version } from '#/types/version'
 
 export const Route = createFileRoute('/student/')({
   component: RouteComponent,
@@ -140,7 +145,10 @@ function StudentProjectRegistration() {
                   {queryError}
                 </p>
               ) : activeProject ? (
-                <ProjectSummary project={activeProject} />
+                <>
+                  <ProjectSummary project={activeProject} />
+                  <VersionSection />
+                </>
               ) : (
                 <form className="space-y-5" onSubmit={handleSubmit}>
                   <div className="space-y-2">
@@ -256,4 +264,203 @@ function getProjectErrorMessage(error: unknown) {
   }
 
   return 'No se pudo registrar el proyecto.'
+}
+
+function getVersionErrorMessage(error: unknown) {
+  if (isAxiosError<ApiErrorResponse>(error)) {
+    return error.response?.data?.detail ?? 'No se pudo registrar la versión.'
+  }
+
+  return 'No se pudo registrar la versión.'
+}
+
+const ESTADO_VARIANT: Record<string, string> = {
+  'APROBADO': 'rounded-full border border-green-200 bg-green-50 px-3 py-1 text-green-700',
+  'EN REVISION': 'rounded-full border border-yellow-200 bg-yellow-50 px-3 py-1 text-yellow-700',
+  'OBSERVADO': 'rounded-full border border-red-200 bg-red-50 px-3 py-1 text-red-700',
+}
+
+function VersionSection() {
+  const versionesQuery = useVersiones()
+  const createVersion = useCreateVersion()
+  const [versionUrl, setVersionUrl] = useState('')
+  const [versionName, setVersionName] = useState('')
+  const [versionLocalError, setVersionLocalError] = useState<string | null>(null)
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const cleanUrl = versionUrl.trim()
+
+    if (!cleanUrl) {
+      setVersionLocalError('El enlace de Google Drive es obligatorio.')
+      return
+    }
+
+    if (!/^https:\/\/drive\.google\.com\/file\/d\//.test(cleanUrl)) {
+      setVersionLocalError(
+        'Debe ingresar un enlace válido de Google Drive (https://drive.google.com/file/d/...)',
+      )
+      return
+    }
+
+    setVersionLocalError(null)
+    createVersion.mutate(
+      { url_pdf: cleanUrl, nombre_archivo: versionName.trim() || undefined },
+      {
+        onSuccess: () => {
+          setVersionUrl('')
+          setVersionName('')
+        },
+      },
+    )
+  }
+
+  const errorMsg =
+    versionLocalError ??
+    (createVersion.error ? getVersionErrorMessage(createVersion.error) : null)
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-[#e2e2e2] bg-white/80 shadow-none backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl text-[#1a1c1c]">
+            <Upload className="size-5 text-[#6b1d2f]" />
+            Nueva versión
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium text-[#544244]"
+                htmlFor="versionUrl"
+              >
+                Enlace de Google Drive
+              </label>
+              <Input
+                id="versionUrl"
+                placeholder="https://drive.google.com/file/d/..."
+                value={versionUrl}
+                onChange={(e) => setVersionUrl(e.target.value)}
+                aria-invalid={Boolean(errorMsg)}
+                className="h-12 rounded-lg border-[#dac0c2] bg-white text-base focus-visible:border-[#6b1d2f] focus-visible:ring-[#6b1d2f]/20"
+                disabled={createVersion.isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium text-[#544244]"
+                htmlFor="versionName"
+              >
+                Nombre del archivo <span className="text-[#455f87]">(opcional)</span>
+              </label>
+              <Input
+                id="versionName"
+                placeholder="Ej. Tesis V2 corregida"
+                value={versionName}
+                onChange={(e) => setVersionName(e.target.value)}
+                className="h-12 rounded-lg border-[#dac0c2] bg-white text-base focus-visible:border-[#6b1d2f] focus-visible:ring-[#6b1d2f]/20"
+                disabled={createVersion.isPending}
+              />
+            </div>
+
+            {errorMsg && (
+              <p className="text-sm text-red-700">{errorMsg}</p>
+            )}
+
+            <Button
+              type="submit"
+              disabled={createVersion.isPending}
+              className="h-12 rounded-xl bg-[#6b1d2f] px-5 text-white hover:bg-[#4e051a]"
+            >
+              {createVersion.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <PlusCircle className="size-4" />
+              )}
+              Registrar versión
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="border-[#e2e2e2] bg-white/80 shadow-none backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl text-[#1a1c1c]">
+            <History className="size-5 text-[#6b1d2f]" />
+            Historial de versiones
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {versionesQuery.isLoading ? (
+            <div className="flex min-h-24 items-center justify-center text-sm text-[#544244]">
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Cargando versiones...
+            </div>
+          ) : versionesQuery.error ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {getVersionErrorMessage(versionesQuery.error)}
+            </p>
+          ) : versionesQuery.data?.versiones?.length ? (
+            <VersionTable versiones={versionesQuery.data.versiones} />
+          ) : (
+            <div className="flex min-h-24 items-center justify-center text-sm text-[#544244]">
+              No se tiene ninguna versión subida aún.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function VersionTable({ versiones }: { versiones: Version[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-[#dac0c2] text-left text-xs font-semibold uppercase text-[#455f87]">
+            <th className="py-3 pr-4">N°</th>
+            <th className="py-3 pr-4">Archivo</th>
+            <th className="py-3 pr-4">Estado</th>
+            <th className="py-3 pr-4">Fecha</th>
+            <th className="py-3 text-right">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {versiones.map((v) => (
+            <tr
+              key={v.id}
+              className="border-b border-[#dac0c2]/50 text-[#1a1c1c]"
+            >
+              <td className="py-3 pr-4 font-medium">v{v.numero_version}</td>
+              <td className="py-3 pr-4">
+                {v.nombre_archivo || `V${v.numero_version}.pdf`}
+              </td>
+              <td className="py-3 pr-4">
+                <Badge className={ESTADO_VARIANT[v.estado] ?? ''}>
+                  {v.estado_display}
+                </Badge>
+              </td>
+              <td className="py-3 pr-4 text-[#544244]">
+                {formatDate(v.created_at)}
+              </td>
+              <td className="py-3 text-right">
+                <a
+                  href={v.url_pdf}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-[#455f87] hover:text-[#6b1d2f]"
+                >
+                  Ver
+                  <ExternalLink className="size-3.5" />
+                </a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
 }
