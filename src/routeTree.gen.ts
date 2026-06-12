@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudentIndexRouteImport } from './routes/student/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as StudentProyectosRouteImport } from './routes/student/proyectos'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as DemoTableRouteImport } from './routes/demo/table'
 import { Route as DemoStoreRouteImport } from './routes/demo/store'
@@ -48,6 +49,11 @@ const StudentIndexRoute = StudentIndexRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudentProyectosRoute = StudentProyectosRouteImport.update({
+  id: '/student/proyectos',
+  path: '/student/proyectos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/demo/store': typeof DemoStoreRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/student/proyectos': typeof StudentProyectosRoute
   '/admin/': typeof AdminIndexRoute
   '/student/': typeof StudentIndexRoute
   '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/demo/store': typeof DemoStoreRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/student/proyectos': typeof StudentProyectosRoute
   '/admin': typeof AdminIndexRoute
   '/student': typeof StudentIndexRoute
   '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/demo/store': typeof DemoStoreRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/student/proyectos': typeof StudentProyectosRoute
   '/admin/': typeof AdminIndexRoute
   '/student/': typeof StudentIndexRoute
   '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/demo/store'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/student/proyectos'
     | '/admin/'
     | '/student/'
     | '/demo/api/mcp-todos'
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/demo/store'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/student/proyectos'
     | '/admin'
     | '/student'
     | '/demo/api/mcp-todos'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/demo/store'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/student/proyectos'
     | '/admin/'
     | '/student/'
     | '/demo/api/mcp-todos'
@@ -218,6 +230,7 @@ export interface RootRouteChildren {
   DemoStoreRoute: typeof DemoStoreRoute
   DemoTableRoute: typeof DemoTableRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  StudentProyectosRoute: typeof StudentProyectosRoute
   AdminIndexRoute: typeof AdminIndexRoute
   StudentIndexRoute: typeof StudentIndexRoute
   DemoApiMcpTodosRoute: typeof DemoApiMcpTodosRoute
@@ -260,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/student/proyectos': {
+      id: '/student/proyectos'
+      path: '/student/proyectos'
+      fullPath: '/student/proyectos'
+      preLoaderRoute: typeof StudentProyectosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/tanstack-query': {
@@ -346,6 +366,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoStoreRoute: DemoStoreRoute,
   DemoTableRoute: DemoTableRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  StudentProyectosRoute: StudentProyectosRoute,
   AdminIndexRoute: AdminIndexRoute,
   StudentIndexRoute: StudentIndexRoute,
   DemoApiMcpTodosRoute: DemoApiMcpTodosRoute,
