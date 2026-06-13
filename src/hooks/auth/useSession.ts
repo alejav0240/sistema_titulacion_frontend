@@ -1,6 +1,7 @@
 import api from '#/lib/api'
 import { useQuery } from '@tanstack/react-query'
 import { authStore, setAuth } from '../useAuthStore'
+import { homeForRole } from '#/lib/roles'
 
 export function useCheckSession() {
   return useQuery({
@@ -9,8 +10,7 @@ export function useCheckSession() {
       const { data } = await api.get('/api/users/me/')
       if (data) {
         setAuth(data)
-        if (data.rol === 'ESTUDIANTE') window.location.href = '/student'
-        else window.location.href = '/admin'
+        window.location.href = homeForRole(data.rol)
       }
       return data
     },

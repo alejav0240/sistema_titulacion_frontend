@@ -1,15 +1,12 @@
-import { Button } from '#/components/ui/button'
-import { Input } from '#/components/ui/input'
-import useLogin from '#/hooks/auth/useAuth'
 import { useForm } from '@tanstack/react-form'
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import z from 'zod'
-import { Eye, EyeOff, School, ArrowRight } from 'lucide-react'
-import loginBg from '&/loginBg.jpg'
-import { authStore, initAuth } from '#/hooks/useAuthStore'
+import useLogin from '#/hooks/auth/useAuth'
 import { useCheckSession } from '#/hooks/auth/useSession'
-import ThemeToggle from '#/components/ThemeToggle'
+import { authStore, initAuth } from '#/hooks/useAuthStore'
+import { homeForRole } from '#/lib/roles'
+import { MaterialIcon } from '#/components/ui/MaterialIcon'
 
 const schema = z.object({
   email: z
@@ -23,6 +20,9 @@ const schema = z.object({
 export const Route = createFileRoute('/auth/login')({
   component: RouteComponent,
 })
+
+const inputClass =
+  'w-full h-[52px] px-md rounded-xl border border-outline-variant bg-surface-container-lowest focus:ring-2 focus:ring-primary-container focus:border-primary outline-none transition-all text-body-md placeholder:text-outline'
 
 function RouteComponent() {
   const [showPassword, setShowPassword] = useState(false)
@@ -46,69 +46,81 @@ function RouteComponent() {
   useEffect(() => {
     initAuth()
     if (authStore.state.isAuthenticated) {
-      const rol = authStore.state.user?.rol
-      window.location.href = rol === 'ESTUDIANTE' ? '/student' : '/admin'
+      window.location.href = homeForRole(authStore.state.user?.rol)
     }
   }, [])
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen overflow-hidden">
-      <section className="hidden lg:flex flex-col justify-center items-center relative p-8 overflow-hidden bg-zinc-900 dark:bg-black">
+    <main className="grid min-h-screen grid-cols-1 overflow-hidden text-on-surface lg:grid-cols-2">
+      {/* Left: Illustration / Branding */}
+      <section className="relative hidden flex-col items-center justify-center overflow-hidden bg-surface-container-low p-xl lg:flex">
+        <div className="absolute inset-0 z-0">
+          <img
+            alt="AcademicFlow Illustration"
+            className="h-full w-full object-cover opacity-90"
+            src="/login-illustration.png"
+          />
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-tertiary/5" />
+        </div>
         <div className="relative z-10 max-w-lg text-center">
-          <div className="mb-4 flex justify-center">
-            <School className="w-16 h-16 text-red-400" />
+          <div className="mb-md flex justify-center">
+            <MaterialIcon name="school" fill size={64} className="text-primary" />
           </div>
-          <h1 className="text-5xl font-bold text-red-400 mb-2 tracking-tight">
-            AcademicFlow
-          </h1>
-          <p className="text-lg text-gray-300 font-bold px-8">
+          <h1 className="mb-sm text-display-lg text-primary">AcademicFlow</h1>
+          <p className="px-lg text-body-lg text-on-surface-variant">
             Sistema Inteligente de Gestión y Revisión de Proyectos de Grado.
           </p>
-
-          <div className="mt-8 bg-zinc-800/70 backdrop-blur-sm border border-zinc-700 rounded-xl p-4 flex items-center gap-4 text-left shadow-lg">
-            <div className="bg-red-400/10 p-2 rounded-lg">
-              <School className="w-5 h-5 text-red-400" />
+          <div className="glass-card mt-xl flex translate-y-8 items-center gap-md rounded-xl p-md text-left shadow-lg">
+            <div className="rounded-lg bg-primary/10 p-sm">
+              <MaterialIcon name="fact_check" className="text-primary" />
             </div>
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wider">
+              <p className="text-label-sm uppercase tracking-wider text-on-surface-variant">
                 Estado del Sistema
               </p>
-              <p className="text-sm text-white font-bold">
-                2% Proyectos en tiempo
-              </p>
+              <p className="text-label-md font-bold">98% Proyectos en tiempo</p>
             </div>
           </div>
         </div>
-
-        <img
-          className="absolute h-screen w-full object-cover opacity-40"
-          src={loginBg}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              'radial-gradient(#4e051a 0.5px, transparent 0.5px)',
+            backgroundSize: '24px 24px',
+          }}
         />
       </section>
 
-      <section className="flex flex-col justify-center items-center p-10 bg-[#FAFAFA] dark:bg-zinc-950">
+      {/* Right: Login Form */}
+      <section className="flex flex-col items-center justify-center bg-[#FAFAFA] p-container-margin">
         <div className="w-full max-w-[440px]">
-          <div className="lg:hidden mb-8 flex items-center gap-2">
-            <School className="w-8 h-8 text-red-900 dark:text-red-400" />
-            <span className="text-xl font-bold text-red-900 dark:text-red-400">
+          {/* Mobile branding */}
+          <div className="mb-xl flex items-center gap-sm lg:hidden">
+            <MaterialIcon name="school" size={32} className="text-primary" />
+            <span className="text-headline-md font-bold text-primary">
               AcademicFlow
             </span>
           </div>
-          <ThemeToggle />
 
-          <header className="mb-8">
-            <h2 className="text-3xl font-semibold text-gray-900 dark:text-white mb-1">
+          <header className="mb-xl">
+            <h2 className="mb-xs text-headline-lg text-on-surface">
               Bienvenido de nuevo
             </h2>
-            <p className="text-base text-gray-500 dark:text-gray-400">
+            <p className="text-body-md text-on-surface-variant">
               Ingresa tus credenciales para acceder a tu panel académico.
             </p>
           </header>
 
           {auth.isError && (
-            <p className="bg-red-200 dark:bg-red-900/30 mb-2 p-3 rounded-2xl text-red-900 dark:text-red-300">
+            <p className="mb-md rounded-xl bg-error-container p-3 text-body-sm text-on-error-container">
               {(() => {
-                const data = auth.error.response?.data
+                const err = auth.error as {
+                  response?: {
+                    data?: { detail?: string; non_field_errors?: string[] }
+                  }
+                }
+                const data = err.response?.data
                 return (
                   data?.detail ||
                   data?.non_field_errors?.[0] ||
@@ -117,31 +129,40 @@ function RouteComponent() {
               })()}
             </p>
           )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault()
               e.stopPropagation()
               form.handleSubmit()
             }}
-            className="space-y-6"
+            className="space-y-lg"
           >
             <form.Field name="email">
               {(field) => (
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                <div className="flex flex-col gap-xs">
+                  <label
+                    className="text-label-md text-on-surface-variant"
+                    htmlFor="email"
+                  >
                     Correo Institucional
                   </label>
-                  <div className="relative group">
-                    <Input
+                  <div className="group relative">
+                    <input
+                      id="email"
                       type="email"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="ejemplo@est.univalle.edu"
-                      className="h-[52px] text-black dark:text-white px-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-red-900/20 focus:border-red-900 dark:focus:border-red-400 outline-none transition-all text-base placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                      placeholder="ejemplo@universidad.edu"
+                      className={inputClass}
+                    />
+                    <MaterialIcon
+                      name="alternate_email"
+                      className="absolute right-md top-1/2 -translate-y-1/2 text-outline-variant transition-colors group-focus-within:text-primary"
                     />
                   </div>
                   {field.state.meta.errors.length > 0 && (
-                    <span className="text-xs text-red-600 dark:text-red-400">
+                    <span className="text-label-sm text-error">
                       {field.state.meta.errors[0]?.message}
                     </span>
                   )}
@@ -151,40 +172,47 @@ function RouteComponent() {
 
             <form.Field name="password">
               {(field) => (
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                <div className="flex flex-col gap-xs">
+                  <div className="flex items-center justify-between">
+                    <label
+                      className="text-label-md text-on-surface-variant"
+                      htmlFor="password"
+                    >
                       Contraseña
                     </label>
-                    <a
-                      href="#"
-                      className="text-sm font-medium text-red-900 dark:text-red-400 hover:underline"
+                    <Link
+                      to="/auth/forgot-password"
+                      className="text-label-md text-primary transition-all hover:underline"
                     >
                       ¿Olvidaste tu contraseña?
-                    </a>
+                    </Link>
                   </div>
-                  <div className="relative group">
-                    <Input
+                  <div className="group relative">
+                    <input
+                      id="password"
                       type={showPassword ? 'text' : 'password'}
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       placeholder="••••••••"
-                      className="h-[52px] px-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-red-900/20 text-black dark:text-white focus:border-red-900 dark:focus:border-red-400 outline-none transition-all text-base pr-12 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                      className={inputClass + ' pr-12'}
                     />
                     <button
                       type="button"
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-red-900 dark:hover:text-red-400 transition-colors"
+                      className="absolute right-md top-1/2 -translate-y-1/2 cursor-pointer text-outline-variant transition-colors hover:text-primary"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={
+                        showPassword
+                          ? 'Ocultar contraseña'
+                          : 'Mostrar contraseña'
+                      }
                     >
-                      {showPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
+                      <MaterialIcon
+                        name={showPassword ? 'visibility_off' : 'visibility'}
+                      />
                     </button>
                   </div>
                   {field.state.meta.errors.length > 0 && (
-                    <span className="text-xs text-red-600 dark:text-red-400">
+                    <span className="text-label-sm text-error">
                       {field.state.meta.errors[0]?.message}
                     </span>
                   )}
@@ -192,89 +220,68 @@ function RouteComponent() {
               )}
             </form.Field>
 
-            <div className="flex items-center gap-2">
-              <form.Field name="rememberMe">
-                {(field) => (
-                  <div className="flex items-center gap-3">
-                    <Input
-                      type="checkbox"
-                      id="remember"
-                      checked={field.state.value}
-                      onChange={(e) => {
-                        field.handleChange(e.target.checked)
-                      }}
-                      className="w-5 h-5 rounded border-gray-300 dark:border-zinc-600 text-red-900 focus:ring-red-900 dark:focus:ring-red-400 cursor-pointer bg-white dark:bg-zinc-800"
-                    />
-                    <label
-                      htmlFor="remember"
-                      className="text-sm text-gray-800 dark:text-gray-300 cursor-pointer select-none"
-                    >
-                      Recordar mi sesión en este dispositivo
-                    </label>
-                  </div>
-                )}
-              </form.Field>
-            </div>
+            <form.Field name="rememberMe">
+              {(field) => (
+                <div className="flex items-center gap-sm">
+                  <input
+                    id="remember"
+                    type="checkbox"
+                    checked={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.checked)}
+                    className="h-5 w-5 cursor-pointer rounded border-outline-variant text-primary focus:ring-primary-container"
+                  />
+                  <label
+                    htmlFor="remember"
+                    className="cursor-pointer select-none text-body-sm text-on-surface-variant"
+                  >
+                    Recordar mi sesión en este dispositivo
+                  </label>
+                </div>
+              )}
+            </form.Field>
 
             <form.Subscribe
               selector={(state) => state.canSubmit}
               children={(canSubmit) => (
-                <Button
+                <button
                   type="submit"
                   disabled={!canSubmit || auth.isPending}
-                  className="w-full h-[56px] bg-red-900 text-white font-semibold rounded-xl shadow-lg hover:bg-red-800 dark:bg-red-800 dark:hover:bg-red-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-base"
+                  className="group flex h-[56px] w-full items-center justify-center gap-sm rounded-xl bg-primary-container text-label-md font-bold text-on-primary shadow-lg transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
                 >
                   {auth.isPending ? 'Ingresando...' : 'Iniciar Sesión'}
-                  {!auth.isPending && <ArrowRight className="w-5 h-5" />}
-                </Button>
+                  {!auth.isPending && (
+                    <MaterialIcon
+                      name="arrow_forward"
+                      size={20}
+                      className="transition-transform group-hover:translate-x-1"
+                    />
+                  )}
+                </button>
               )}
             />
           </form>
 
-          <div className="relative my-8">
+          <div className="relative my-xl">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-200 dark:border-zinc-700" />
+              <span className="w-full border-t border-outline-variant" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-4 bg-[#FAFAFA] dark:bg-zinc-950 text-xs font-semibold uppercase text-gray-400 dark:text-gray-500">
+              <span className="bg-[#FAFAFA] px-md text-label-sm uppercase text-outline">
                 Acceso Restringido
               </span>
             </div>
           </div>
 
           <footer className="text-center">
-            <p className="text-base text-gray-500 dark:text-gray-400">
-              ¿Sin cuenta?{' '}
-              <a
-                href="#"
-                className="text-red-900 dark:text-red-400 font-bold hover:underline"
-              >
-                Solicitar registro
-              </a>
+            <p className="text-body-md text-on-surface-variant">
+              ¿Sin cuenta? Las cuentas son creadas por la Dirección de Carrera.
             </p>
-            <div className="mt-8 flex justify-center gap-4">
-              <a
-                href="#"
-                className="text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-red-900 dark:hover:text-red-400 transition-colors"
-              >
-                Términos
-              </a>
-              <a
-                href="#"
-                className="text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-red-900 dark:hover:text-red-400 transition-colors"
-              >
-                Privacidad
-              </a>
-              <a
-                href="#"
-                className="text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-red-900 dark:hover:text-red-400 transition-colors"
-              >
-                Ayuda
-              </a>
-            </div>
+            <p className="mt-xl text-label-sm text-outline">
+              AcademicFlow · Sistema de Gestión de Proyectos de Grado
+            </p>
           </footer>
         </div>
       </section>
-    </div>
+    </main>
   )
 }

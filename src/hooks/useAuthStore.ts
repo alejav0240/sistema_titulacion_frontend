@@ -1,7 +1,7 @@
 import { Store } from '@tanstack/react-store'
 
 interface AuthState {
-  user: { id: number; email: string; name: string; rol: string } | null
+  user: { id: number; email: string; nombre: string; rol: string } | null
   isAuthenticated: boolean
 }
 

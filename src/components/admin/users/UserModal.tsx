@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
 import {
   Dialog,
@@ -51,14 +52,14 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
   const updateMutation = useUpdateUser()
   const isEditing = !!user
 
-  const form = useForm<UserFormData>({
+  const form = useForm({
     defaultValues: {
       nombre: '',
       email: '',
       rol: 'ESTUDIANTE',
       subroles: [],
       sendEmail: true,
-    },
+    } as UserFormData,
     validators: {
       onChange: userSchema,
     },
@@ -69,34 +70,63 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
           nombre: value.nombre,
           email: value.email,
           rol: value.rol,
+          capacidades,
         })
       } else {
-        await createMutation.mutateAsync({
+        const creado = await createMutation.mutateAsync({
           nombre: value.nombre,
           email: value.email,
           rol: value.rol,
+          capacidades,
           sendEmail: value.sendEmail,
         })
+        if (value.sendEmail && creado.email_enviado === false) {
+          toast.warning(
+            'El usuario se creó, pero el email con las credenciales no pudo enviarse.',
+          )
+        }
+        if (creado.generated_password) {
+          // La contraseña solo viaja una vez: mostrarla antes de cerrar.
+          setGeneratedPassword(creado.generated_password)
+          setSelectedRol('ESTUDIANTE')
+          setCapacidades([])
+          form.reset()
+          return
+        }
+        toast.success('Usuario creado correctamente.')
       }
       onOpenChange(false)
       setSelectedRol('ESTUDIANTE')
+      setCapacidades([])
       form.reset()
     },
   })
 
   const [selectedRol, setSelectedRol] = useState<Rol>('ESTUDIANTE')
+  const [capacidades, setCapacidades] = useState<string[]>([])
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(
+    null,
+  )
 
   useEffect(() => {
+    setGeneratedPassword(null)
     if (isEditing && user) {
       form.setFieldValue('nombre', user.nombre)
       form.setFieldValue('email', user.email)
       form.setFieldValue('rol', user.rol)
       setSelectedRol(user.rol)
+      setCapacidades(user.capacidades ?? [])
     } else {
       form.reset()
       setSelectedRol('ESTUDIANTE')
+      setCapacidades([])
     }
   }, [user, isEditing, open])
+
+  const toggleCapacidad = (value: string) =>
+    setCapacidades((prev) =>
+      prev.includes(value) ? prev.filter((c) => c !== value) : [...prev, value],
+    )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -112,6 +142,48 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
           </DialogDescription>
         </DialogHeader>
 
+        {generatedPassword && (
+          <div className="space-y-4 py-4">
+            <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+              <p className="mb-2 text-sm font-bold text-amber-900">
+                Usuario creado. Guarda esta contraseña ahora: no volverá a
+                mostrarse.
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 rounded-lg bg-white px-3 py-2 font-mono text-sm text-gray-900 ring-1 ring-amber-200">
+                  {generatedPassword}
+                </code>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedPassword)
+                    toast.success('Contraseña copiada al portapapeles.')
+                  }}
+                >
+                  Copiar
+                </Button>
+              </div>
+              <p className="mt-2 text-xs text-amber-800">
+                Entrégala al usuario por un medio seguro y recomiéndale
+                cambiarla desde Mi Perfil.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                onClick={() => {
+                  setGeneratedPassword(null)
+                  onOpenChange(false)
+                }}
+              >
+                Entendido, cerrar
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+
+        {!generatedPassword && (
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -209,6 +281,39 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
               )}
             />
 
+            {selectedRol !== 'ESTUDIANTE' && (
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-gray-700 dark:text-gray-300">
+                  Capacidades adicionales
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      ['TUTOR_TESIS', 'Tutor de Tesis'],
+                      ['TRIBUNAL', 'Tribunal'],
+                      ['TIEMPO_COMPLETO', 'Docente a Tiempo Completo'],
+                      ['DOCENTE_MATERIA', 'Docente de Materia'],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <label
+                      key={value}
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-outline-variant p-2 text-sm text-on-surface-variant transition-colors hover:border-primary"
+                    >
+                      <Checkbox
+                        checked={capacidades.includes(value)}
+                        onCheckedChange={() => toggleCapacidad(value)}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400">
+                  Los roles de tutor/tribunal efectivos se derivan de las
+                  asignaciones por estudiante.
+                </p>
+              </div>
+            )}
+
             {!isEditing && (
               <form.Field
                 name="sendEmail"
@@ -256,6 +361,7 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
             />
           </DialogFooter>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   )

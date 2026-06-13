@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { authStore, initAuth } from '#/hooks/useAuthStore'
+import { homeForRole } from '#/lib/roles'
 import type { Rol } from '#/types/user'
 
 export function AuthGuard({
@@ -26,8 +27,7 @@ export function AuthGuard({
       allowedRoles &&
       (!state.user || !allowedRoles.includes(state.user.rol as Rol))
     ) {
-      const target = state.user?.rol === 'ESTUDIANTE' ? '/student' : '/admin'
-      router.navigate({ to: target, replace: true })
+      router.navigate({ to: homeForRole(state.user?.rol), replace: true })
       return
     }
 

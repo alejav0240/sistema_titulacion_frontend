@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import {
   flexRender,
   getCoreRowModel,
@@ -42,7 +43,11 @@ const createColumns = (
         .slice(0, 2)
         .toUpperCase()
       return (
-        <div className="flex items-center gap-3">
+        <Link
+          to="/admin/usuarios/$usuarioId"
+          params={{ usuarioId: String(user.id) }}
+          className="flex items-center gap-3"
+        >
           <Avatar className="w-10 h-10 border-2 border-transparent group-hover:border-red-900/20 transition-all">
             <AvatarImage src="" />
             <AvatarFallback className="bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 text-sm font-semibold">
@@ -50,16 +55,25 @@ const createColumns = (
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">{user.nombre}</p>
+            <p className="text-sm font-medium text-gray-900 group-hover:text-primary dark:text-white">{user.nombre}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
           </div>
-        </div>
+        </Link>
       )
     },
   }),
   columnHelper.accessor('rol', {
     header: 'Rol(es)',
-    cell: ({ getValue }) => <RoleBadge rol={getValue()} />,
+    cell: ({ row }) => (
+      <div className="flex flex-wrap gap-1">
+        {(row.original.roles_efectivos?.length
+          ? row.original.roles_efectivos
+          : [row.original.rol]
+        ).map((rol) => (
+          <RoleBadge key={rol} rol={rol} />
+        ))}
+      </div>
+    ),
   }),
   columnHelper.accessor('is_active', {
     header: 'Estado',

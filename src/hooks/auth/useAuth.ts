@@ -1,9 +1,11 @@
 import api from '#/lib/api'
 import { useMutation } from '@tanstack/react-query'
 import { clearAuth, setAuth } from '../useAuthStore'
+import { homeForRole } from '#/lib/roles'
 
 export default function useLogin() {
   return useMutation({
+    meta: { silentError: true },
     mutationFn: async ({
       email,
       password,
@@ -24,11 +26,7 @@ export default function useLogin() {
     onSuccess: (data) => {
       setAuth(data)
       if (data) {
-        if (data.is_staff) {
-          window.location.href = '/admin'
-        } else {
-          window.location.href = '/student'
-        }
+        window.location.href = homeForRole(data.rol)
       }
     },
   })

@@ -11,6 +11,8 @@ export interface Usuario {
   email: string
   nombre: string
   rol: Rol
+  capacidades: string[]
+  roles_efectivos: string[]
   is_active: boolean
   is_staff: boolean
   created_at: string
@@ -21,13 +23,22 @@ export interface UsuarioCreate {
   email: string
   nombre: string
   rol: Rol
+  capacidades?: string[]
   sendEmail: boolean | undefined
+}
+
+/** Respuesta al crear un usuario: la contraseña generada solo viene
+ *  cuando no se envió por email (se muestra una única vez). */
+export interface UsuarioCreado extends Usuario {
+  generated_password?: string | null
+  email_enviado?: boolean
 }
 
 export interface UsuarioUpdate {
   email?: string
   nombre?: string
   rol?: Rol
+  capacidades?: string[]
   is_active?: boolean
   password?: string
 }
@@ -44,7 +55,8 @@ export interface ImportResult {
     email: string
     nombre: string
     rol: string
-    password: string
+    email_enviado: boolean
+    password?: string
   }>
   errors: Array<{
     row: number
