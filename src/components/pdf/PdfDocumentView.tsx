@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
+// Vite resuelve y empaqueta el worker con ?url (versión atada a la de react-pdf).
+// `new URL('pdfjs-dist/...', import.meta.url)` NO funciona en Vite con specifiers
+// de paquete: resolvía a /src/components/pdf/... y el worker fallaba al cargar.
+import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import { cn } from '#/lib/utils'
 import type { Anotacion, RectNormalizado } from '#/types/annotation'
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString()
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
 
 export interface DraftRect extends RectNormalizado {
   /** Posición en píxeles dentro del contenedor de la página (para el popover) */
@@ -53,10 +54,8 @@ export default function PdfDocumentView({
   const containerRef = useRef<HTMLDivElement>(null)
   const pageRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState<number>(0)
-  const file = useMemo(
-    () => ({ url: fileUrl, withCredentials: true }),
-    [fileUrl],
-  )
+  // PdfViewer ya descargó el PDF y nos pasa un object URL (blob) estable.
+  const file = useMemo(() => fileUrl, [fileUrl])
   const [drawing, setDrawing] = useState<{
     startX: number
     startY: number
@@ -161,8 +160,8 @@ export default function PdfDocumentView({
         }
         error={
           <div className="mx-auto mt-xl max-w-[28rem] rounded-xl bg-error-container p-lg text-center text-body-sm text-on-error-container">
-            No se pudo cargar el PDF. Verifica que el link de Google Drive esté
-            compartido como «Cualquier persona con el enlace».
+            No se pudo renderizar el PDF. El archivo podría estar dañado o no ser
+            un PDF válido.
           </div>
         }
         onLoadSuccess={({ numPages }) => onLoaded?.(numPages)}
