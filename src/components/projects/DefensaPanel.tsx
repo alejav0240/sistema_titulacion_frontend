@@ -273,7 +273,7 @@ function DefensaModal({
 
   return (
     <Dialog open={!!mode} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg bg-white">
+      <DialogContent className="sm:max-w-[32rem] bg-white">
         <DialogHeader>
           <DialogTitle className="text-xl text-primary">
             {mode === 'programar'

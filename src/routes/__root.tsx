@@ -4,11 +4,7 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Toaster } from 'sonner'
-
-import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import appCss from '../styles.css?url'
 
@@ -57,7 +53,7 @@ function NotFoundPage() {
     <main className="flex min-h-screen flex-col items-center justify-center gap-md bg-[#FAFAFA] p-xl text-center text-on-surface">
       <MaterialIcon name="travel_explore" size={64} className="text-primary" />
       <h1 className="text-display-lg font-bold text-primary">404</h1>
-      <p className="max-w-md text-body-lg text-on-surface-variant">
+      <p className="max-w-[28rem] text-body-lg text-on-surface-variant">
         La página que buscas no existe o fue movida.
       </p>
       <Link
@@ -78,7 +74,7 @@ function ErrorPage({ error }: { error: Error }) {
       <h1 className="text-headline-lg font-bold text-primary">
         Algo salió mal
       </h1>
-      <p className="max-w-md text-body-md text-on-surface-variant">
+      <p className="max-w-[28rem] text-body-md text-on-surface-variant">
         {error.message || 'Ocurrió un error inesperado.'}
       </p>
       <div className="mt-md flex gap-md">
@@ -108,19 +104,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="font-sans antialiased [overflow-wrap:anywhere]">
+      <body
+        className="font-sans antialiased break-words"
+        suppressHydrationWarning
+      >
         {children}
         <Toaster richColors position="top-right" closeButton />
-        <TanStackDevtools
-          config={{ position: 'bottom-right' }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            TanStackQueryDevtools,
-          ]}
-        />
         <Scripts />
       </body>
     </html>

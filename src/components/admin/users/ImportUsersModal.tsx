@@ -34,7 +34,7 @@ export function ImportUsersModal({ open, onOpenChange }: ImportUsersModalProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800">
+      <DialogContent className="sm:max-w-[28rem] bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800">
         <DialogHeader>
           <DialogTitle className="text-xl text-red-900 dark:text-red-400">
             Importar Usuarios

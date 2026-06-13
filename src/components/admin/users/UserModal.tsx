@@ -130,7 +130,7 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800">
         <DialogHeader>
           <DialogTitle className="text-xl text-red-900 dark:text-red-400">
             {isEditing ? 'Editar Usuario' : 'Registrar Nuevo Usuario'}

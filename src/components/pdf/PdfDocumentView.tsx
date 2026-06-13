@@ -160,7 +160,7 @@ export default function PdfDocumentView({
           </div>
         }
         error={
-          <div className="mx-auto mt-xl max-w-md rounded-xl bg-error-container p-lg text-center text-body-sm text-on-error-container">
+          <div className="mx-auto mt-xl max-w-[28rem] rounded-xl bg-error-container p-lg text-center text-body-sm text-on-error-container">
             No se pudo cargar el PDF. Verifica que el link de Google Drive esté
             compartido como «Cualquier persona con el enlace».
           </div>

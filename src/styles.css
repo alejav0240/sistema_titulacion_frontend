@@ -94,7 +94,10 @@
   --color-sidebar-border: #e2e2e2;
   --color-sidebar-ring: #6b1d2f;
 
-  /* ===== Stitch spacing scale ===== */
+  /* ===== Stitch spacing scale =====
+     OJO: en Tailwind v4 estos nombres (sm/md/lg/xl) también alimentan la escala
+     de max-width/min-width, así que `max-w-lg` valdría 24px en vez de 32rem.
+     Para anchos usar valores arbitrarios (`max-w-[32rem]`) o tallas `2xl`+. */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;

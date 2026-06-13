@@ -23,9 +23,9 @@ export default function useLogin() {
       const { data } = await api.get('/api/users/me/')
       return data
     },
-    onSuccess: (data) => {
-      setAuth(data)
+    onSuccess: (data, { rememberMe }) => {
       if (data) {
+        setAuth(data, rememberMe)
         window.location.href = homeForRole(data.rol)
       }
     },

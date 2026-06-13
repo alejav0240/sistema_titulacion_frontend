@@ -43,7 +43,7 @@ export function SendNotificationModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="rounded-xl border-outline-variant sm:max-w-lg">
+      <DialogContent className="rounded-xl border-outline-variant sm:max-w-[32rem]">
         <DialogHeader>
           <DialogTitle className="text-headline-md text-primary">
             Enviar Notificación Personalizada

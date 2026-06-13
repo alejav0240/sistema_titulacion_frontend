@@ -80,7 +80,7 @@ function StudentDashboard() {
             <div className="min-w-0">
               <h2 className="text-headline-md font-bold">{user?.nombre}</h2>
               <p className="text-body-sm text-white/70">{user?.email}</p>
-              <div className="mt-md max-w-md rounded-lg bg-white/10 p-sm backdrop-blur-sm">
+              <div className="mt-md max-w-[28rem] rounded-lg bg-white/10 p-sm backdrop-blur-sm">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">
                   Título del Proyecto
                 </p>
@@ -308,7 +308,7 @@ function EditProjectModal({
         }
       }}
     >
-      <DialogContent className="rounded-xl border-outline-variant sm:max-w-md">
+      <DialogContent className="rounded-xl border-outline-variant sm:max-w-[28rem]">
         <DialogHeader>
           <DialogTitle className="text-headline-md text-primary">
             Editar proyecto
@@ -589,7 +589,7 @@ function RegisterProjectCard() {
   const createProject = useCreateProject()
 
   return (
-    <section className="mx-auto max-w-xl rounded-xl border border-outline-variant bg-white p-lg">
+    <section className="mx-auto max-w-[36rem] rounded-xl border border-outline-variant bg-white p-lg">
       <div className="mb-md flex items-center gap-sm">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-container text-white">
           <MaterialIcon name="post_add" size={20} />
@@ -656,7 +656,7 @@ function NewVersionModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="rounded-xl border-outline-variant sm:max-w-md">
+      <DialogContent className="rounded-xl border-outline-variant sm:max-w-[28rem]">
         <DialogHeader>
           <DialogTitle className="text-headline-md text-primary">
             Nueva Entrega (V{nextVersion})

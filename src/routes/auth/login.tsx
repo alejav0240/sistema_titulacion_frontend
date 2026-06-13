@@ -41,7 +41,7 @@ function RouteComponent() {
       onChange: schema,
     },
   })
-  useCheckSession()
+  const session = useCheckSession()
 
   useEffect(() => {
     initAuth()
@@ -50,27 +50,33 @@ function RouteComponent() {
     }
   }, [])
 
+  useEffect(() => {
+    if (session.data) {
+      window.location.href = homeForRole(session.data.rol)
+    }
+  }, [session.data])
+
   return (
     <main className="grid min-h-screen grid-cols-1 overflow-hidden text-on-surface lg:grid-cols-2">
       {/* Left: Illustration / Branding */}
-      <section className="relative hidden flex-col items-center justify-center overflow-hidden bg-surface-container-low p-xl lg:flex">
+      <section className="relative hidden flex-col items-center justify-center overflow-hidden bg-primary p-xl lg:flex">
         <div className="absolute inset-0 z-0">
           <img
-            alt="AcademicFlow Illustration"
-            className="h-full w-full object-cover opacity-90"
+            alt=""
+            className="h-full w-full object-cover opacity-25"
             src="/login-illustration.png"
           />
-          <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-tertiary/5" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-tertiary/90" />
         </div>
-        <div className="relative z-10 max-w-lg text-center">
+        <div className="relative z-10 w-full max-w-[32rem] text-center">
           <div className="mb-md flex justify-center">
-            <MaterialIcon name="school" fill size={64} className="text-primary" />
+            <MaterialIcon name="school" fill size={64} className="text-white" />
           </div>
-          <h1 className="mb-sm text-display-lg text-primary">AcademicFlow</h1>
-          <p className="px-lg text-body-lg text-on-surface-variant">
+          <h1 className="mb-sm text-display-lg text-white">AcademicFlow</h1>
+          <p className="px-lg text-body-lg text-white/85">
             Sistema Inteligente de Gestión y Revisión de Proyectos de Grado.
           </p>
-          <div className="glass-card mt-xl flex translate-y-8 items-center gap-md rounded-xl p-md text-left shadow-lg">
+          <div className="glass-card mx-auto mt-xl flex max-w-[24rem] items-center gap-md rounded-xl p-md text-left shadow-lg">
             <div className="rounded-lg bg-primary/10 p-sm">
               <MaterialIcon name="fact_check" className="text-primary" />
             </div>
@@ -78,15 +84,17 @@ function RouteComponent() {
               <p className="text-label-sm uppercase tracking-wider text-on-surface-variant">
                 Estado del Sistema
               </p>
-              <p className="text-label-md font-bold">98% Proyectos en tiempo</p>
+              <p className="text-label-md font-bold text-on-surface">
+                98% Proyectos en tiempo
+              </p>
             </div>
           </div>
         </div>
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          className="pointer-events-none absolute inset-0 opacity-[0.06]"
           style={{
             backgroundImage:
-              'radial-gradient(#4e051a 0.5px, transparent 0.5px)',
+              'radial-gradient(#ffffff 0.5px, transparent 0.5px)',
             backgroundSize: '24px 24px',
           }}
         />
@@ -228,7 +236,7 @@ function RouteComponent() {
                     type="checkbox"
                     checked={field.state.value}
                     onChange={(e) => field.handleChange(e.target.checked)}
-                    className="h-5 w-5 cursor-pointer rounded border-outline-variant text-primary focus:ring-primary-container"
+                    className="h-5 w-5 cursor-pointer rounded border-outline-variant accent-primary focus:ring-primary-container"
                   />
                   <label
                     htmlFor="remember"

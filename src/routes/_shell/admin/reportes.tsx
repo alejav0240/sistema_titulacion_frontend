@@ -331,7 +331,7 @@ function ExportModal({ open, onClose }: { open: boolean; onClose: () => void }) 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="rounded-xl border-outline-variant sm:max-w-md">
+      <DialogContent className="rounded-xl border-outline-variant sm:max-w-[28rem]">
         <DialogHeader>
           <DialogTitle className="text-headline-md text-primary">
             Exportar reporte
