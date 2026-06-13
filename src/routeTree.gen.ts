@@ -9,30 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as McpRouteImport } from './routes/mcp'
-import { Route as AboutRouteImport } from './routes/about'
+import { Route as ShellRouteImport } from './routes/_shell'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as StudentIndexRouteImport } from './routes/student/index'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
-import { Route as DemoTableRouteImport } from './routes/demo/table'
-import { Route as DemoStoreRouteImport } from './routes/demo/store'
-import { Route as DemoMcpTodosRouteImport } from './routes/demo/mcp-todos'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
-import { Route as ApiResumeChatRouteImport } from './routes/api.resume-chat'
-import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
-import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
-import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
-import { Route as DemoApiMcpTodosRouteImport } from './routes/demo/api.mcp-todos'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as ShellPerfilRouteImport } from './routes/_shell/perfil'
+import { Route as ShellNotificacionesRouteImport } from './routes/_shell/notificaciones'
+import { Route as ShellCronogramaRouteImport } from './routes/_shell/cronograma'
+import { Route as ShellStudentIndexRouteImport } from './routes/_shell/student/index'
+import { Route as ShellProyectosIndexRouteImport } from './routes/_shell/proyectos/index'
+import { Route as ShellDocenteIndexRouteImport } from './routes/_shell/docente/index'
+import { Route as ShellAdminIndexRouteImport } from './routes/_shell/admin/index'
+import { Route as ShellRevisionVersionIdRouteImport } from './routes/_shell/revision/$versionId'
+import { Route as ShellProyectosProyectoIdRouteImport } from './routes/_shell/proyectos/$proyectoId'
+import { Route as ShellAdminUsuariosRouteImport } from './routes/_shell/admin/usuarios'
+import { Route as ShellAdminReportesRouteImport } from './routes/_shell/admin/reportes'
+import { Route as ShellAdminMateriasIndexRouteImport } from './routes/_shell/admin/materias/index'
+import { Route as ShellAdminUsuariosUsuarioIdRouteImport } from './routes/_shell/admin/usuarios_.$usuarioId'
+import { Route as ShellAdminMateriasMateriaIdRouteImport } from './routes/_shell/admin/materias/$materiaId'
 
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const ShellRoute = ShellRouteImport.update({
+  id: '/_shell',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -40,34 +38,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StudentIndexRoute = StudentIndexRouteImport.update({
-  id: '/student/',
-  path: '/student/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
-  id: '/demo/tanstack-query',
-  path: '/demo/tanstack-query',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoTableRoute = DemoTableRouteImport.update({
-  id: '/demo/table',
-  path: '/demo/table',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoStoreRoute = DemoStoreRouteImport.update({
-  id: '/demo/store',
-  path: '/demo/store',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoMcpTodosRoute = DemoMcpTodosRouteImport.update({
-  id: '/demo/mcp-todos',
-  path: '/demo/mcp-todos',
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
@@ -75,170 +48,226 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiResumeChatRoute = ApiResumeChatRouteImport.update({
-  id: '/api/resume-chat',
-  path: '/api/resume-chat',
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth/forgot-password',
+  path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+const ShellPerfilRoute = ShellPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellNotificacionesRoute = ShellNotificacionesRouteImport.update({
+  id: '/notificaciones',
+  path: '/notificaciones',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellCronogramaRoute = ShellCronogramaRouteImport.update({
+  id: '/cronograma',
+  path: '/cronograma',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellStudentIndexRoute = ShellStudentIndexRouteImport.update({
+  id: '/student/',
+  path: '/student/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellProyectosIndexRoute = ShellProyectosIndexRouteImport.update({
+  id: '/proyectos/',
+  path: '/proyectos/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellDocenteIndexRoute = ShellDocenteIndexRouteImport.update({
+  id: '/docente/',
+  path: '/docente/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAdminIndexRoute = ShellAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellRevisionVersionIdRoute = ShellRevisionVersionIdRouteImport.update({
+  id: '/revision/$versionId',
+  path: '/revision/$versionId',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellProyectosProyectoIdRoute =
+  ShellProyectosProyectoIdRouteImport.update({
+    id: '/proyectos/$proyectoId',
+    path: '/proyectos/$proyectoId',
+    getParentRoute: () => ShellRoute,
+  } as any)
+const ShellAdminUsuariosRoute = ShellAdminUsuariosRouteImport.update({
   id: '/admin/usuarios',
   path: '/admin/usuarios',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => ShellRoute,
 } as any)
-const DemoFormSimpleRoute = DemoFormSimpleRouteImport.update({
-  id: '/demo/form/simple',
-  path: '/demo/form/simple',
-  getParentRoute: () => rootRouteImport,
+const ShellAdminReportesRoute = ShellAdminReportesRouteImport.update({
+  id: '/admin/reportes',
+  path: '/admin/reportes',
+  getParentRoute: () => ShellRoute,
 } as any)
-const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
-  id: '/demo/form/address',
-  path: '/demo/form/address',
-  getParentRoute: () => rootRouteImport,
+const ShellAdminMateriasIndexRoute = ShellAdminMateriasIndexRouteImport.update({
+  id: '/admin/materias/',
+  path: '/admin/materias/',
+  getParentRoute: () => ShellRoute,
 } as any)
-const DemoApiMcpTodosRoute = DemoApiMcpTodosRouteImport.update({
-  id: '/demo/api/mcp-todos',
-  path: '/demo/api/mcp-todos',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const ShellAdminUsuariosUsuarioIdRoute =
+  ShellAdminUsuariosUsuarioIdRouteImport.update({
+    id: '/admin/usuarios_/$usuarioId',
+    path: '/admin/usuarios/$usuarioId',
+    getParentRoute: () => ShellRoute,
+  } as any)
+const ShellAdminMateriasMateriaIdRoute =
+  ShellAdminMateriasMateriaIdRouteImport.update({
+    id: '/admin/materias/$materiaId',
+    path: '/admin/materias/$materiaId',
+    getParentRoute: () => ShellRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/mcp': typeof McpRoute
-  '/admin/usuarios': typeof AdminUsuariosRoute
-  '/api/resume-chat': typeof ApiResumeChatRoute
+  '/cronograma': typeof ShellCronogramaRoute
+  '/notificaciones': typeof ShellNotificacionesRoute
+  '/perfil': typeof ShellPerfilRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
-  '/demo/mcp-todos': typeof DemoMcpTodosRoute
-  '/demo/store': typeof DemoStoreRoute
-  '/demo/table': typeof DemoTableRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/admin/': typeof AdminIndexRoute
-  '/student/': typeof StudentIndexRoute
-  '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
-  '/demo/form/address': typeof DemoFormAddressRoute
-  '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/admin/reportes': typeof ShellAdminReportesRoute
+  '/admin/usuarios': typeof ShellAdminUsuariosRoute
+  '/proyectos/$proyectoId': typeof ShellProyectosProyectoIdRoute
+  '/revision/$versionId': typeof ShellRevisionVersionIdRoute
+  '/admin/': typeof ShellAdminIndexRoute
+  '/docente/': typeof ShellDocenteIndexRoute
+  '/proyectos/': typeof ShellProyectosIndexRoute
+  '/student/': typeof ShellStudentIndexRoute
+  '/admin/materias/$materiaId': typeof ShellAdminMateriasMateriaIdRoute
+  '/admin/usuarios/$usuarioId': typeof ShellAdminUsuariosUsuarioIdRoute
+  '/admin/materias/': typeof ShellAdminMateriasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/mcp': typeof McpRoute
-  '/admin/usuarios': typeof AdminUsuariosRoute
-  '/api/resume-chat': typeof ApiResumeChatRoute
+  '/cronograma': typeof ShellCronogramaRoute
+  '/notificaciones': typeof ShellNotificacionesRoute
+  '/perfil': typeof ShellPerfilRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
-  '/demo/mcp-todos': typeof DemoMcpTodosRoute
-  '/demo/store': typeof DemoStoreRoute
-  '/demo/table': typeof DemoTableRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/admin': typeof AdminIndexRoute
-  '/student': typeof StudentIndexRoute
-  '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
-  '/demo/form/address': typeof DemoFormAddressRoute
-  '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/admin/reportes': typeof ShellAdminReportesRoute
+  '/admin/usuarios': typeof ShellAdminUsuariosRoute
+  '/proyectos/$proyectoId': typeof ShellProyectosProyectoIdRoute
+  '/revision/$versionId': typeof ShellRevisionVersionIdRoute
+  '/admin': typeof ShellAdminIndexRoute
+  '/docente': typeof ShellDocenteIndexRoute
+  '/proyectos': typeof ShellProyectosIndexRoute
+  '/student': typeof ShellStudentIndexRoute
+  '/admin/materias/$materiaId': typeof ShellAdminMateriasMateriaIdRoute
+  '/admin/usuarios/$usuarioId': typeof ShellAdminUsuariosUsuarioIdRoute
+  '/admin/materias': typeof ShellAdminMateriasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/mcp': typeof McpRoute
-  '/admin/usuarios': typeof AdminUsuariosRoute
-  '/api/resume-chat': typeof ApiResumeChatRoute
+  '/_shell': typeof ShellRouteWithChildren
+  '/_shell/cronograma': typeof ShellCronogramaRoute
+  '/_shell/notificaciones': typeof ShellNotificacionesRoute
+  '/_shell/perfil': typeof ShellPerfilRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
-  '/demo/mcp-todos': typeof DemoMcpTodosRoute
-  '/demo/store': typeof DemoStoreRoute
-  '/demo/table': typeof DemoTableRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/admin/': typeof AdminIndexRoute
-  '/student/': typeof StudentIndexRoute
-  '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
-  '/demo/form/address': typeof DemoFormAddressRoute
-  '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/_shell/admin/reportes': typeof ShellAdminReportesRoute
+  '/_shell/admin/usuarios': typeof ShellAdminUsuariosRoute
+  '/_shell/proyectos/$proyectoId': typeof ShellProyectosProyectoIdRoute
+  '/_shell/revision/$versionId': typeof ShellRevisionVersionIdRoute
+  '/_shell/admin/': typeof ShellAdminIndexRoute
+  '/_shell/docente/': typeof ShellDocenteIndexRoute
+  '/_shell/proyectos/': typeof ShellProyectosIndexRoute
+  '/_shell/student/': typeof ShellStudentIndexRoute
+  '/_shell/admin/materias/$materiaId': typeof ShellAdminMateriasMateriaIdRoute
+  '/_shell/admin/usuarios_/$usuarioId': typeof ShellAdminUsuariosUsuarioIdRoute
+  '/_shell/admin/materias/': typeof ShellAdminMateriasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/about'
-    | '/mcp'
-    | '/admin/usuarios'
-    | '/api/resume-chat'
+    | '/cronograma'
+    | '/notificaciones'
+    | '/perfil'
+    | '/auth/forgot-password'
     | '/auth/login'
-    | '/demo/mcp-todos'
-    | '/demo/store'
-    | '/demo/table'
-    | '/demo/tanstack-query'
+    | '/auth/reset-password'
+    | '/admin/reportes'
+    | '/admin/usuarios'
+    | '/proyectos/$proyectoId'
+    | '/revision/$versionId'
     | '/admin/'
+    | '/docente/'
+    | '/proyectos/'
     | '/student/'
-    | '/demo/api/mcp-todos'
-    | '/demo/form/address'
-    | '/demo/form/simple'
+    | '/admin/materias/$materiaId'
+    | '/admin/usuarios/$usuarioId'
+    | '/admin/materias/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/about'
-    | '/mcp'
-    | '/admin/usuarios'
-    | '/api/resume-chat'
+    | '/cronograma'
+    | '/notificaciones'
+    | '/perfil'
+    | '/auth/forgot-password'
     | '/auth/login'
-    | '/demo/mcp-todos'
-    | '/demo/store'
-    | '/demo/table'
-    | '/demo/tanstack-query'
+    | '/auth/reset-password'
+    | '/admin/reportes'
+    | '/admin/usuarios'
+    | '/proyectos/$proyectoId'
+    | '/revision/$versionId'
     | '/admin'
+    | '/docente'
+    | '/proyectos'
     | '/student'
-    | '/demo/api/mcp-todos'
-    | '/demo/form/address'
-    | '/demo/form/simple'
+    | '/admin/materias/$materiaId'
+    | '/admin/usuarios/$usuarioId'
+    | '/admin/materias'
   id:
     | '__root__'
     | '/'
-    | '/about'
-    | '/mcp'
-    | '/admin/usuarios'
-    | '/api/resume-chat'
+    | '/_shell'
+    | '/_shell/cronograma'
+    | '/_shell/notificaciones'
+    | '/_shell/perfil'
+    | '/auth/forgot-password'
     | '/auth/login'
-    | '/demo/mcp-todos'
-    | '/demo/store'
-    | '/demo/table'
-    | '/demo/tanstack-query'
-    | '/admin/'
-    | '/student/'
-    | '/demo/api/mcp-todos'
-    | '/demo/form/address'
-    | '/demo/form/simple'
+    | '/auth/reset-password'
+    | '/_shell/admin/reportes'
+    | '/_shell/admin/usuarios'
+    | '/_shell/proyectos/$proyectoId'
+    | '/_shell/revision/$versionId'
+    | '/_shell/admin/'
+    | '/_shell/docente/'
+    | '/_shell/proyectos/'
+    | '/_shell/student/'
+    | '/_shell/admin/materias/$materiaId'
+    | '/_shell/admin/usuarios_/$usuarioId'
+    | '/_shell/admin/materias/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
-  McpRoute: typeof McpRoute
-  AdminUsuariosRoute: typeof AdminUsuariosRoute
-  ApiResumeChatRoute: typeof ApiResumeChatRoute
+  ShellRoute: typeof ShellRouteWithChildren
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
-  DemoMcpTodosRoute: typeof DemoMcpTodosRoute
-  DemoStoreRoute: typeof DemoStoreRoute
-  DemoTableRoute: typeof DemoTableRoute
-  DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-  StudentIndexRoute: typeof StudentIndexRoute
-  DemoApiMcpTodosRoute: typeof DemoApiMcpTodosRoute
-  DemoFormAddressRoute: typeof DemoFormAddressRoute
-  DemoFormSimpleRoute: typeof DemoFormSimpleRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
+    '/_shell': {
+      id: '/_shell'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ShellRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -248,46 +277,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/student/': {
-      id: '/student/'
-      path: '/student'
-      fullPath: '/student/'
-      preLoaderRoute: typeof StudentIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/admin'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/tanstack-query': {
-      id: '/demo/tanstack-query'
-      path: '/demo/tanstack-query'
-      fullPath: '/demo/tanstack-query'
-      preLoaderRoute: typeof DemoTanstackQueryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/table': {
-      id: '/demo/table'
-      path: '/demo/table'
-      fullPath: '/demo/table'
-      preLoaderRoute: typeof DemoTableRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/store': {
-      id: '/demo/store'
-      path: '/demo/store'
-      fullPath: '/demo/store'
-      preLoaderRoute: typeof DemoStoreRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/mcp-todos': {
-      id: '/demo/mcp-todos'
-      path: '/demo/mcp-todos'
-      fullPath: '/demo/mcp-todos'
-      preLoaderRoute: typeof DemoMcpTodosRouteImport
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/login': {
@@ -297,60 +291,156 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/resume-chat': {
-      id: '/api/resume-chat'
-      path: '/api/resume-chat'
-      fullPath: '/api/resume-chat'
-      preLoaderRoute: typeof ApiResumeChatRouteImport
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/usuarios': {
-      id: '/admin/usuarios'
+    '/_shell/perfil': {
+      id: '/_shell/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof ShellPerfilRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/notificaciones': {
+      id: '/_shell/notificaciones'
+      path: '/notificaciones'
+      fullPath: '/notificaciones'
+      preLoaderRoute: typeof ShellNotificacionesRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/cronograma': {
+      id: '/_shell/cronograma'
+      path: '/cronograma'
+      fullPath: '/cronograma'
+      preLoaderRoute: typeof ShellCronogramaRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/student/': {
+      id: '/_shell/student/'
+      path: '/student'
+      fullPath: '/student/'
+      preLoaderRoute: typeof ShellStudentIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/proyectos/': {
+      id: '/_shell/proyectos/'
+      path: '/proyectos'
+      fullPath: '/proyectos/'
+      preLoaderRoute: typeof ShellProyectosIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/docente/': {
+      id: '/_shell/docente/'
+      path: '/docente'
+      fullPath: '/docente/'
+      preLoaderRoute: typeof ShellDocenteIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/admin/': {
+      id: '/_shell/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof ShellAdminIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/revision/$versionId': {
+      id: '/_shell/revision/$versionId'
+      path: '/revision/$versionId'
+      fullPath: '/revision/$versionId'
+      preLoaderRoute: typeof ShellRevisionVersionIdRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/proyectos/$proyectoId': {
+      id: '/_shell/proyectos/$proyectoId'
+      path: '/proyectos/$proyectoId'
+      fullPath: '/proyectos/$proyectoId'
+      preLoaderRoute: typeof ShellProyectosProyectoIdRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/admin/usuarios': {
+      id: '/_shell/admin/usuarios'
       path: '/admin/usuarios'
       fullPath: '/admin/usuarios'
-      preLoaderRoute: typeof AdminUsuariosRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ShellAdminUsuariosRouteImport
+      parentRoute: typeof ShellRoute
     }
-    '/demo/form/simple': {
-      id: '/demo/form/simple'
-      path: '/demo/form/simple'
-      fullPath: '/demo/form/simple'
-      preLoaderRoute: typeof DemoFormSimpleRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_shell/admin/reportes': {
+      id: '/_shell/admin/reportes'
+      path: '/admin/reportes'
+      fullPath: '/admin/reportes'
+      preLoaderRoute: typeof ShellAdminReportesRouteImport
+      parentRoute: typeof ShellRoute
     }
-    '/demo/form/address': {
-      id: '/demo/form/address'
-      path: '/demo/form/address'
-      fullPath: '/demo/form/address'
-      preLoaderRoute: typeof DemoFormAddressRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_shell/admin/materias/': {
+      id: '/_shell/admin/materias/'
+      path: '/admin/materias'
+      fullPath: '/admin/materias/'
+      preLoaderRoute: typeof ShellAdminMateriasIndexRouteImport
+      parentRoute: typeof ShellRoute
     }
-    '/demo/api/mcp-todos': {
-      id: '/demo/api/mcp-todos'
-      path: '/demo/api/mcp-todos'
-      fullPath: '/demo/api/mcp-todos'
-      preLoaderRoute: typeof DemoApiMcpTodosRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_shell/admin/usuarios_/$usuarioId': {
+      id: '/_shell/admin/usuarios_/$usuarioId'
+      path: '/admin/usuarios/$usuarioId'
+      fullPath: '/admin/usuarios/$usuarioId'
+      preLoaderRoute: typeof ShellAdminUsuariosUsuarioIdRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/admin/materias/$materiaId': {
+      id: '/_shell/admin/materias/$materiaId'
+      path: '/admin/materias/$materiaId'
+      fullPath: '/admin/materias/$materiaId'
+      preLoaderRoute: typeof ShellAdminMateriasMateriaIdRouteImport
+      parentRoute: typeof ShellRoute
     }
   }
 }
 
+interface ShellRouteChildren {
+  ShellCronogramaRoute: typeof ShellCronogramaRoute
+  ShellNotificacionesRoute: typeof ShellNotificacionesRoute
+  ShellPerfilRoute: typeof ShellPerfilRoute
+  ShellAdminReportesRoute: typeof ShellAdminReportesRoute
+  ShellAdminUsuariosRoute: typeof ShellAdminUsuariosRoute
+  ShellProyectosProyectoIdRoute: typeof ShellProyectosProyectoIdRoute
+  ShellRevisionVersionIdRoute: typeof ShellRevisionVersionIdRoute
+  ShellAdminIndexRoute: typeof ShellAdminIndexRoute
+  ShellDocenteIndexRoute: typeof ShellDocenteIndexRoute
+  ShellProyectosIndexRoute: typeof ShellProyectosIndexRoute
+  ShellStudentIndexRoute: typeof ShellStudentIndexRoute
+  ShellAdminMateriasMateriaIdRoute: typeof ShellAdminMateriasMateriaIdRoute
+  ShellAdminUsuariosUsuarioIdRoute: typeof ShellAdminUsuariosUsuarioIdRoute
+  ShellAdminMateriasIndexRoute: typeof ShellAdminMateriasIndexRoute
+}
+
+const ShellRouteChildren: ShellRouteChildren = {
+  ShellCronogramaRoute: ShellCronogramaRoute,
+  ShellNotificacionesRoute: ShellNotificacionesRoute,
+  ShellPerfilRoute: ShellPerfilRoute,
+  ShellAdminReportesRoute: ShellAdminReportesRoute,
+  ShellAdminUsuariosRoute: ShellAdminUsuariosRoute,
+  ShellProyectosProyectoIdRoute: ShellProyectosProyectoIdRoute,
+  ShellRevisionVersionIdRoute: ShellRevisionVersionIdRoute,
+  ShellAdminIndexRoute: ShellAdminIndexRoute,
+  ShellDocenteIndexRoute: ShellDocenteIndexRoute,
+  ShellProyectosIndexRoute: ShellProyectosIndexRoute,
+  ShellStudentIndexRoute: ShellStudentIndexRoute,
+  ShellAdminMateriasMateriaIdRoute: ShellAdminMateriasMateriaIdRoute,
+  ShellAdminUsuariosUsuarioIdRoute: ShellAdminUsuariosUsuarioIdRoute,
+  ShellAdminMateriasIndexRoute: ShellAdminMateriasIndexRoute,
+}
+
+const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
-  McpRoute: McpRoute,
-  AdminUsuariosRoute: AdminUsuariosRoute,
-  ApiResumeChatRoute: ApiResumeChatRoute,
+  ShellRoute: ShellRouteWithChildren,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
-  DemoMcpTodosRoute: DemoMcpTodosRoute,
-  DemoStoreRoute: DemoStoreRoute,
-  DemoTableRoute: DemoTableRoute,
-  DemoTanstackQueryRoute: DemoTanstackQueryRoute,
-  AdminIndexRoute: AdminIndexRoute,
-  StudentIndexRoute: StudentIndexRoute,
-  DemoApiMcpTodosRoute: DemoApiMcpTodosRoute,
-  DemoFormAddressRoute: DemoFormAddressRoute,
-  DemoFormSimpleRoute: DemoFormSimpleRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

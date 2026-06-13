@@ -7,11 +7,7 @@ export function useCheckSession() {
     queryKey: ['session'],
     queryFn: async () => {
       const { data } = await api.get('/api/users/me/')
-      if (data) {
-        setAuth(data)
-        if (data.rol === 'ESTUDIANTE') window.location.href = '/student'
-        else window.location.href = '/admin'
-      }
+      if (data) setAuth(data)
       return data
     },
     retry: false,

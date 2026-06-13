@@ -28,8 +28,13 @@ api.interceptors.response.use(
     const originalRequest = error.config
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (originalRequest.url?.includes('/api/login/refresh')) {
-        if (!window.location.pathname.includes('/auth/login')) {
+      // Un 401 del propio login (credenciales) o del refresh no debe disparar
+      // otro intento de refresh; se rechaza para que el formulario muestre el error.
+      if (originalRequest.url?.includes('/api/login')) {
+        if (
+          originalRequest.url?.includes('/api/login/refresh') &&
+          !window.location.pathname.includes('/auth/login')
+        ) {
           window.location.href = '/auth/login'
         }
         return Promise.reject(error)
