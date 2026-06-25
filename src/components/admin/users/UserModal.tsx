@@ -23,6 +23,8 @@ import {
 import { Checkbox } from '#/components/ui/checkbox'
 import type { Rol, Usuario } from '#/types/user'
 import { useCreateUser, useUpdateUser } from '#/hooks/useUsers'
+import { useStore } from '@tanstack/react-store'
+import { authStore } from '#/hooks/useAuthStore'
 
 const userSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio'),
@@ -50,6 +52,7 @@ interface UserModalProps {
 export function UserModal({ open, onOpenChange, user }: UserModalProps) {
   const createMutation = useCreateUser()
   const updateMutation = useUpdateUser()
+  const currentUser = useStore(authStore, (s) => s.user)
   const isEditing = !!user
 
   const form = useForm({
@@ -71,6 +74,7 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
           email: value.email,
           rol: value.rol,
           capacidades,
+          ...(esDocente && { cupos_tutor: cuposTutor, cupos_tribunal: cuposTribunal }),
         })
       } else {
         const creado = await createMutation.mutateAsync({
@@ -104,9 +108,13 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
 
   const [selectedRol, setSelectedRol] = useState<Rol>('ESTUDIANTE')
   const [capacidades, setCapacidades] = useState<string[]>([])
+  const [cuposTutor, setCuposTutor] = useState(0)
+  const [cuposTribunal, setCuposTribunal] = useState(0)
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(
     null,
   )
+
+  const esDocente = selectedRol === 'DOCENTE'
 
   useEffect(() => {
     setGeneratedPassword(null)
@@ -116,10 +124,14 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
       form.setFieldValue('rol', user.rol)
       setSelectedRol(user.rol)
       setCapacidades(user.capacidades ?? [])
+      setCuposTutor(user.cupos_tutor ?? 0)
+      setCuposTribunal(user.cupos_tribunal ?? 0)
     } else {
       form.reset()
       setSelectedRol('ESTUDIANTE')
       setCapacidades([])
+      setCuposTutor(0)
+      setCuposTribunal(0)
     }
   }, [user, isEditing, open])
 
@@ -271,8 +283,6 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
                     <SelectContent>
                       <SelectItem value="ESTUDIANTE">Estudiante</SelectItem>
                       <SelectItem value="DOCENTE">Docente</SelectItem>
-                      <SelectItem value="TUTOR">Tutor</SelectItem>
-                      <SelectItem value="TRIBUNAL">Tribunal</SelectItem>
                       <SelectItem value="DIRECTOR">Director</SelectItem>
                       <SelectItem value="DTC">DTC</SelectItem>
                     </SelectContent>
@@ -289,11 +299,13 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
                 <div className="grid grid-cols-2 gap-2">
                   {(
                     [
-                      ['TUTOR_TESIS', 'Tutor de Tesis'],
-                      ['TRIBUNAL', 'Tribunal'],
-                      ['TIEMPO_COMPLETO', 'Docente a Tiempo Completo'],
-                      ['DOCENTE_MATERIA', 'Docente de Materia'],
+                      ['TUTOR_TESIS', 'Tutor de Tesis', false],
+                      ['TRIBUNAL', 'Tribunal', false],
+                      ['TIEMPO_COMPLETO', 'Docente a Tiempo Completo', true],
+                      ['DOCENTE_MATERIA', 'Docente de Materia', false],
                     ] as const
+                  ).filter(([, , soloDirector]) =>
+                    !soloDirector || currentUser?.rol === 'DIRECTOR'
                   ).map(([value, label]) => (
                     <label
                       key={value}
@@ -311,6 +323,37 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
                   Los roles de tutor/tribunal efectivos se derivan de las
                   asignaciones por estudiante.
                 </p>
+              </div>
+            )}
+
+            {esDocente && (
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-gray-700 dark:text-gray-300">
+                  Cupos de asignación
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-gray-500">Cupos como Tutor</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={cuposTutor}
+                      onChange={(e) => setCuposTutor(Number(e.target.value))}
+                      className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-gray-500">Cupos como Tribunal</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={cuposTribunal}
+                      onChange={(e) => setCuposTribunal(Number(e.target.value))}
+                      className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400">0 = sin límite de asignaciones</p>
               </div>
             )}
 

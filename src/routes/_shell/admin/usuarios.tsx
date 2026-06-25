@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useStore } from '@tanstack/react-store'
 import { StatsCards } from '#/components/admin/ui/StatsCards'
 import { UserFilters } from '#/components/admin/users/UserFilters'
 import { UserTable } from '#/components/admin/users/UserTable'
@@ -10,6 +11,7 @@ import { Plus, Upload } from 'lucide-react'
 import { useUsers, useDeactivateUser, useActivateUser } from '#/hooks/useUsers'
 import type { Usuario } from '#/types/user'
 import { AuthGuard } from '#/components/auth/AuthGuard'
+import { authStore } from '#/hooks/useAuthStore'
 
 export const Route = createFileRoute('/_shell/admin/usuarios')({
   component: UsuariosPage,
@@ -29,6 +31,8 @@ function UsuariosPage() {
   const { data, isLoading } = useUsers(page, filters)
   const deactivateMutation = useDeactivateUser()
   const activateMutation = useActivateUser()
+  const currentUser = useStore(authStore, (s) => s.user)
+  const isDirector = currentUser?.rol === 'DIRECTOR'
 
   const handleEdit = (user: Usuario) => {
     setEditingUser(user)
@@ -85,21 +89,25 @@ function UsuariosPage() {
                 }))
               }
             />
-            <Button
-              onClick={() => setImportModalOpen(true)}
-              variant="outline"
-              className="px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800"
-            >
-              <Upload className="w-4 h-4" />
-              Importar CSV
-            </Button>
-            <Button
-              onClick={() => setModalOpen(true)}
-              className="bg-red-900 text-white hover:bg-red-800 px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 shadow-md"
-            >
-              <Plus className="w-4 h-4" />
-              Agregar usuario
-            </Button>
+            {isDirector && (
+              <>
+                <Button
+                  onClick={() => setImportModalOpen(true)}
+                  variant="outline"
+                  className="px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                >
+                  <Upload className="w-4 h-4" />
+                  Importar CSV
+                </Button>
+                <Button
+                  onClick={() => setModalOpen(true)}
+                  className="bg-red-900 text-white hover:bg-red-800 px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  Agregar usuario
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
