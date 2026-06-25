@@ -13,6 +13,10 @@ export interface Usuario {
   rol: Rol
   capacidades: string[]
   roles_efectivos: string[]
+  cupos_tutor: number
+  cupos_tribunal: number
+  tutorados_activos: number
+  tribunales_activos: number
   is_active: boolean
   is_staff: boolean
   created_at: string
@@ -39,6 +43,8 @@ export interface UsuarioUpdate {
   nombre?: string
   rol?: Rol
   capacidades?: string[]
+  cupos_tutor?: number
+  cupos_tribunal?: number
   is_active?: boolean
   password?: string
 }

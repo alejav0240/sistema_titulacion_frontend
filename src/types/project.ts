@@ -53,10 +53,12 @@ export interface Proyecto {
   estudiante_email: string
   estado: EstadoProyecto
   etapa: Etapa
+  motivo_rechazo: string
   estado_revision: EstadoRevision
   ultima_version: VersionResumen | null
   observaciones_pendientes: number
   tutor_nombre: string | null
+  tribunal_nombres: string[]
   defensa: DefensaResumen | null
   created_at: string
   updated_at: string

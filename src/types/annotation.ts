@@ -21,6 +21,7 @@ export interface Anotacion {
   codigo: number
   codigo_display: string
   version: number
+  version_numero: number
   autor: number
   autor_nombre: string
   estado: EstadoAnotacion
