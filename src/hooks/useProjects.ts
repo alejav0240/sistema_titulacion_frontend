@@ -161,6 +161,34 @@ export function useActualizarDefensa() {
   })
 }
 
+export function useAprobarPropuesta() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (proyectoId: number) => {
+      const { data } = await api.post<Proyecto>(`/api/projects/${proyectoId}/aprobar-propuesta/`)
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
+
+export function useRechazarPropuesta() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ proyectoId, motivo }: { proyectoId: number; motivo: string }) => {
+      const { data } = await api.post<Proyecto>(`/api/projects/${proyectoId}/rechazar-propuesta/`, { motivo })
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
+
 export async function downloadProjectsExport(format: 'xlsx' | 'pdf') {
   const response = await api.get('/api/projects/export/', {
     params: { formato: format },

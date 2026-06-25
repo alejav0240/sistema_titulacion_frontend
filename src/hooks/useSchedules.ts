@@ -64,3 +64,17 @@ export function useDeleteEvento() {
     },
   })
 }
+
+export function useUpdateEvento() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: Partial<EventoPayload> & { id: number }) => {
+      const { data } = await api.patch<EventoCronograma>(`/api/schedules/${id}/`, payload)
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['schedules'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
