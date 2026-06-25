@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import { useStore } from '@tanstack/react-store'
+import { authStore } from '#/hooks/useAuthStore'
 import {
   Bar,
   BarChart,
@@ -7,6 +9,7 @@ import {
   Tooltip,
   XAxis,
 } from 'recharts'
+import { toast } from 'sonner'
 import { AuthGuard } from '#/components/auth/AuthGuard'
 import { MiniCalendar } from '#/components/dashboard/MiniCalendar'
 import {
@@ -15,8 +18,16 @@ import {
 import { StatusBadge } from '#/components/projects/StatusBadge'
 import { ClientOnly } from '#/components/ui/ClientOnly'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
 import { initials } from '#/components/layout/Topbar'
 import { useTeacherDashboard } from '#/hooks/useDashboard'
+import { useProjects, useAprobarPropuesta, useRechazarPropuesta } from '#/hooks/useProjects'
 import { timeAgo } from '#/lib/datetime'
 import { cn } from '#/lib/utils'
 import type { Proyecto } from '#/types/project'
@@ -35,7 +46,7 @@ function RouteComponent() {
 
 type Filtro = 'todos' | 'tutor' | 'tribunal' | 'materia'
 
-const FILTROS: Array<[Filtro, string]> = [
+const FILTROS_BASE: Array<[Filtro, string]> = [
   ['todos', 'Todos'],
   ['tutor', 'Tutor'],
   ['tribunal', 'Tribunal'],
@@ -51,8 +62,15 @@ const ACTIVIDAD_LABELS: Record<string, string> = {
 
 function TeacherDashboard() {
   const dashboard = useTeacherDashboard()
+  const currentUser = useStore(authStore, (s) => s.user)
+  const esDocenteMateria = currentUser?.capacidades?.includes('DOCENTE_MATERIA') ?? false
+  const filtros = esDocenteMateria ? FILTROS_BASE : FILTROS_BASE.filter(([k]) => k !== 'materia')
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [notifOpen, setNotifOpen] = useState(false)
+
+  useEffect(() => {
+    if (filtro === 'materia' && !esDocenteMateria) setFiltro('todos')
+  }, [esDocenteMateria, filtro])
 
   const data = dashboard.data
 
@@ -81,7 +99,7 @@ function TeacherDashboard() {
     <div className="space-y-lg">
       {/* Chips de filtro por rol */}
       <div className="flex flex-wrap items-center gap-sm">
-        {FILTROS.map(([key, label]) => (
+        {filtros.map(([key, label]) => (
           <button
             key={key}
             type="button"
@@ -107,8 +125,11 @@ function TeacherDashboard() {
           {show('tribunal') && (
             <TribunalesCard proyectos={data?.tribunales ?? []} />
           )}
-          {show('materia') && (
-            <PendientesMateriaCard pendientes={data?.pendientes_materia ?? []} />
+          {show('materia') && esDocenteMateria && (
+            <>
+              <PropuestasPendientesCard />
+              <PendientesMateriaCard pendientes={data?.pendientes_materia ?? []} />
+            </>
           )}
         </div>
 
@@ -420,5 +441,134 @@ function PendientesMateriaCard({
         )}
       </div>
     </div>
+  )
+}
+
+
+function PropuestasPendientesCard() {
+  const { data, isLoading } = useProjects({ etapa: 'PROPUESTA' })
+  const aprobar = useAprobarPropuesta()
+  const rechazar = useRechazarPropuesta()
+  const [rechazoOpen, setRechazoOpen] = useState(false)
+  const [rechazoProyecto, setRechazoProyecto] = useState<Proyecto | null>(null)
+  const [motivo, setMotivo] = useState('')
+
+  const propuestas = data?.results ?? []
+
+  if (!isLoading && propuestas.length === 0) return null
+
+  return (
+    <>
+      <div className="rounded-xl border border-[#FDE68A] bg-[#FFFBEB] p-lg">
+        <div className="mb-md flex items-center justify-between">
+          <h3 className="text-label-md font-bold text-on-surface">
+            Propuestas pendientes de aprobación
+          </h3>
+          <RolBadge label="Materia" />
+        </div>
+        {isLoading ? (
+          <p className="text-body-sm text-outline">Cargando propuestas…</p>
+        ) : (
+          <div className="space-y-sm">
+            {propuestas.map((proyecto) => (
+              <div
+                key={proyecto.id}
+                className="flex items-center justify-between rounded-lg border border-[#FDE68A] bg-white p-sm"
+              >
+                <div className="min-w-0">
+                  <p className="text-label-md font-bold text-on-surface">
+                    {proyecto.estudiante_nombre}
+                  </p>
+                  <p className="truncate text-body-sm text-on-surface-variant">
+                    {proyecto.titulo}
+                  </p>
+                  <p className="text-label-sm text-outline">
+                    {timeAgo(proyecto.created_at)}
+                  </p>
+                </div>
+                <div className="ml-md flex shrink-0 gap-sm">
+                  <button
+                    type="button"
+                    disabled={aprobar.isPending}
+                    onClick={() =>
+                      aprobar.mutate(proyecto.id, {
+                        onSuccess: () => toast.success('Propuesta aprobada.'),
+                      })
+                    }
+                    className="rounded-lg bg-[#10B981] px-md py-sm text-label-sm font-bold text-white transition-all hover:brightness-110 disabled:opacity-50"
+                  >
+                    Aprobar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRechazoProyecto(proyecto)
+                      setMotivo('')
+                      setRechazoOpen(true)
+                    }}
+                    className="rounded-lg border border-error px-md py-sm text-label-sm font-bold text-error transition-all hover:bg-error-container disabled:opacity-50"
+                  >
+                    Rechazar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Dialog open={rechazoOpen} onOpenChange={(o) => !o && setRechazoOpen(false)}>
+        <DialogContent className="rounded-xl border-outline-variant sm:max-w-[28rem]">
+          <DialogHeader>
+            <DialogTitle className="text-headline-md text-error">
+              Rechazar propuesta
+            </DialogTitle>
+            <DialogDescription className="text-body-sm text-on-surface-variant">
+              Indica el motivo para que el estudiante pueda corregir su propuesta.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-md"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (!rechazoProyecto) return
+              rechazar.mutate(
+                { proyectoId: rechazoProyecto.id, motivo },
+                {
+                  onSuccess: () => {
+                    toast.success('Propuesta rechazada.')
+                    setRechazoOpen(false)
+                  },
+                },
+              )
+            }}
+          >
+            <textarea
+              rows={3}
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Describe el motivo del rechazo (opcional)"
+              className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest p-md text-body-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary-container"
+            />
+            <div className="flex gap-sm">
+              <button
+                type="button"
+                onClick={() => setRechazoOpen(false)}
+                className="flex-1 rounded-xl border border-outline-variant py-sm text-label-md font-bold text-on-surface-variant"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={rechazar.isPending}
+                className="flex-1 rounded-xl bg-error py-sm text-label-md font-bold text-on-error transition-all hover:brightness-110 disabled:opacity-50"
+              >
+                {rechazar.isPending ? 'Rechazando…' : 'Confirmar rechazo'}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
