@@ -18,6 +18,9 @@ const config = defineConfig({
     viteReact(),
     babel({ presets: [reactCompilerPreset()] }),
   ],
+  server: {
+    allowedHosts: ['titulaciones.soceisi.com'],
+  },
 })
 
 export default config
