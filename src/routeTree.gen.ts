@@ -18,6 +18,7 @@ import { Route as ShellPerfilRouteImport } from './routes/_shell/perfil'
 import { Route as ShellNotificacionesRouteImport } from './routes/_shell/notificaciones'
 import { Route as ShellCronogramaRouteImport } from './routes/_shell/cronograma'
 import { Route as ShellStudentIndexRouteImport } from './routes/_shell/student/index'
+import { Route as ShellRevisionIndexRouteImport } from './routes/_shell/revision/index'
 import { Route as ShellProyectosIndexRouteImport } from './routes/_shell/proyectos/index'
 import { Route as ShellDocenteIndexRouteImport } from './routes/_shell/docente/index'
 import { Route as ShellAdminIndexRouteImport } from './routes/_shell/admin/index'
@@ -71,6 +72,11 @@ const ShellCronogramaRoute = ShellCronogramaRouteImport.update({
 const ShellStudentIndexRoute = ShellStudentIndexRouteImport.update({
   id: '/student/',
   path: '/student/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellRevisionIndexRoute = ShellRevisionIndexRouteImport.update({
+  id: '/revision/',
+  path: '/revision/',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellProyectosIndexRoute = ShellProyectosIndexRouteImport.update({
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof ShellAdminIndexRoute
   '/docente/': typeof ShellDocenteIndexRoute
   '/proyectos/': typeof ShellProyectosIndexRoute
+  '/revision/': typeof ShellRevisionIndexRoute
   '/student/': typeof ShellStudentIndexRoute
   '/admin/materias/$materiaId': typeof ShellAdminMateriasMateriaIdRoute
   '/admin/usuarios/$usuarioId': typeof ShellAdminUsuariosUsuarioIdRoute
@@ -162,6 +169,7 @@ export interface FileRoutesByTo {
   '/admin': typeof ShellAdminIndexRoute
   '/docente': typeof ShellDocenteIndexRoute
   '/proyectos': typeof ShellProyectosIndexRoute
+  '/revision': typeof ShellRevisionIndexRoute
   '/student': typeof ShellStudentIndexRoute
   '/admin/materias/$materiaId': typeof ShellAdminMateriasMateriaIdRoute
   '/admin/usuarios/$usuarioId': typeof ShellAdminUsuariosUsuarioIdRoute
@@ -184,6 +192,7 @@ export interface FileRoutesById {
   '/_shell/admin/': typeof ShellAdminIndexRoute
   '/_shell/docente/': typeof ShellDocenteIndexRoute
   '/_shell/proyectos/': typeof ShellProyectosIndexRoute
+  '/_shell/revision/': typeof ShellRevisionIndexRoute
   '/_shell/student/': typeof ShellStudentIndexRoute
   '/_shell/admin/materias/$materiaId': typeof ShellAdminMateriasMateriaIdRoute
   '/_shell/admin/usuarios_/$usuarioId': typeof ShellAdminUsuariosUsuarioIdRoute
@@ -206,6 +215,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/docente/'
     | '/proyectos/'
+    | '/revision/'
     | '/student/'
     | '/admin/materias/$materiaId'
     | '/admin/usuarios/$usuarioId'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/docente'
     | '/proyectos'
+    | '/revision'
     | '/student'
     | '/admin/materias/$materiaId'
     | '/admin/usuarios/$usuarioId'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/_shell/admin/'
     | '/_shell/docente/'
     | '/_shell/proyectos/'
+    | '/_shell/revision/'
     | '/_shell/student/'
     | '/_shell/admin/materias/$materiaId'
     | '/_shell/admin/usuarios_/$usuarioId'
@@ -324,6 +336,13 @@ declare module '@tanstack/react-router' {
       path: '/student'
       fullPath: '/student/'
       preLoaderRoute: typeof ShellStudentIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/revision/': {
+      id: '/_shell/revision/'
+      path: '/revision'
+      fullPath: '/revision/'
+      preLoaderRoute: typeof ShellRevisionIndexRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/proyectos/': {
@@ -410,6 +429,7 @@ interface ShellRouteChildren {
   ShellAdminIndexRoute: typeof ShellAdminIndexRoute
   ShellDocenteIndexRoute: typeof ShellDocenteIndexRoute
   ShellProyectosIndexRoute: typeof ShellProyectosIndexRoute
+  ShellRevisionIndexRoute: typeof ShellRevisionIndexRoute
   ShellStudentIndexRoute: typeof ShellStudentIndexRoute
   ShellAdminMateriasMateriaIdRoute: typeof ShellAdminMateriasMateriaIdRoute
   ShellAdminUsuariosUsuarioIdRoute: typeof ShellAdminUsuariosUsuarioIdRoute
@@ -427,6 +447,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellAdminIndexRoute: ShellAdminIndexRoute,
   ShellDocenteIndexRoute: ShellDocenteIndexRoute,
   ShellProyectosIndexRoute: ShellProyectosIndexRoute,
+  ShellRevisionIndexRoute: ShellRevisionIndexRoute,
   ShellStudentIndexRoute: ShellStudentIndexRoute,
   ShellAdminMateriasMateriaIdRoute: ShellAdminMateriasMateriaIdRoute,
   ShellAdminUsuariosUsuarioIdRoute: ShellAdminUsuariosUsuarioIdRoute,
