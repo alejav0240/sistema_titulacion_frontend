@@ -1,15 +1,19 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { useStore } from '@tanstack/react-store'
 import { GraduationStepper } from '#/components/dashboard/GraduationStepper'
 import { DefensaPanel } from '#/components/projects/DefensaPanel'
 import { StatusBadge } from '#/components/projects/StatusBadge'
+import { ObservationMatrix } from '#/components/annotations/ObservationMatrix'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import { initials } from '#/components/layout/Topbar'
 import { authStore } from '#/hooks/useAuthStore'
 import { useProject } from '#/hooks/useProjects'
 import { useVersions } from '#/hooks/useVersions'
+import api from '#/lib/api'
 import { formatDate, formatDateTime } from '#/lib/datetime'
 import { ETAPA_LABELS } from '#/types/project'
+import type { Anotacion } from '#/types/annotation'
 
 export const Route = createFileRoute('/_shell/proyectos/$proyectoId')({
   component: ProyectoDetailPage,
@@ -85,6 +89,8 @@ function ProyectoDetailPage() {
 
       <GraduationStepper etapa={data.etapa} />
 
+      <ObservacionesSection proyectoId={id} />
+
       <section className="grid grid-cols-1 gap-lg lg:grid-cols-3">
         {/* Historial de versiones */}
         <div className="rounded-xl border border-outline-variant bg-white p-lg lg:col-span-2">
@@ -137,9 +143,8 @@ function ProyectoDetailPage() {
                     type="button"
                     onClick={() =>
                       navigate({
-                        to: '/revision/$versionId',
-                        params: { versionId: String(version.id) },
-                        search: {},
+                        to: '/revision',
+                        search: { proyecto: id },
                       })
                     }
                     title="Abrir en el visor"
@@ -202,5 +207,29 @@ function ProyectoDetailPage() {
         </div>
       </section>
     </div>
+  )
+}
+
+function ObservacionesSection({ proyectoId }: { proyectoId: number }) {
+  const { data: observaciones = [], isLoading } = useQuery({
+    queryKey: ['anotaciones', 'proyecto', proyectoId],
+    queryFn: async () => {
+      const { data } = await api.get<Anotacion[]>(`/api/projects/${proyectoId}/annotations/`)
+      return data
+    },
+  })
+
+  return (
+    <section className="rounded-xl border border-outline-variant bg-white p-lg">
+      <h3 className="mb-md flex items-center gap-sm text-label-md font-bold text-on-surface">
+        <MaterialIcon name="fact_check" size={20} className="text-primary" />
+        Matriz de Observaciones
+      </h3>
+      {isLoading ? (
+        <p className="text-body-sm text-outline">Cargando…</p>
+      ) : (
+        <ObservationMatrix observaciones={observaciones} />
+      )}
+    </section>
   )
 }

@@ -18,7 +18,15 @@ import { authStore } from '#/hooks/useAuthStore'
 import { useStudentDashboard } from '#/hooks/useDashboard'
 import { useCreateProject, useUpdateProject } from '#/hooks/useProjects'
 import { useCreateVersion, useDeleteVersion } from '#/hooks/useVersions'
-import { formatDate, formatDateTime, formatDayMonth, timeAgo } from '#/lib/datetime'
+import { ObservationMatrix } from '#/components/annotations/ObservationMatrix'
+import { useQuery } from '@tanstack/react-query'
+import api from '#/lib/api'
+import {
+  formatDate,
+  formatDateTime,
+  formatDayMonth,
+  timeAgo,
+} from '#/lib/datetime'
 import { cn } from '#/lib/utils'
 import type { Anotacion } from '#/types/annotation'
 import type { Proyecto, Version } from '#/types/project'
@@ -108,7 +116,11 @@ function StudentDashboard() {
         <div className="flex flex-col gap-lg">
           <div className="rounded-xl border border-[#FDE68A] bg-[#FFFBEB] p-md">
             <div className="flex items-center gap-sm">
-              <MaterialIcon name="hourglass_top" className="text-[#B45309]" size={20} />
+              <MaterialIcon
+                name="hourglass_top"
+                className="text-[#B45309]"
+                size={20}
+              />
               <p className="text-label-sm font-bold uppercase tracking-wider text-[#B45309]">
                 Estado Actual
               </p>
@@ -169,7 +181,9 @@ function StudentDashboard() {
                 </div>
               ))}
               {(data?.proximos_eventos ?? []).length === 0 && (
-                <p className="text-body-sm text-outline">Sin fechas próximas.</p>
+                <p className="text-body-sm text-outline">
+                  Sin fechas próximas.
+                </p>
               )}
             </div>
           </div>
@@ -179,15 +193,21 @@ function StudentDashboard() {
       {proyecto?.defensa && <DefensaStudentCard proyecto={proyecto} />}
 
       {proyecto ? (
-        <>
-          <GraduationStepper etapa={proyecto.etapa} />
+        proyecto.etapa === 'PROPUESTA' ? (
+          <PropuestaEnRevisionCard proyecto={proyecto} />
+        ) : (
+          <>
+            <GraduationStepper etapa={proyecto.etapa} />
 
-          <section className="grid grid-cols-1 gap-lg lg:grid-cols-3">
-            <VersionsTimeline versiones={data?.versiones ?? []} />
-            <TutorObservations observaciones={data?.observaciones ?? []} />
-            <VersionsHistory versiones={data?.versiones ?? []} />
-          </section>
-        </>
+            <section className="grid grid-cols-1 gap-lg lg:grid-cols-3">
+              <VersionsTimeline versiones={data?.versiones ?? []} />
+              <TutorObservations observaciones={data?.observaciones ?? []} />
+              <VersionsHistory versiones={data?.versiones ?? []} />
+            </section>
+
+            <ObservationMatrixSection proyectoId={proyecto.id} />
+          </>
+        )
       ) : (
         <RegisterProjectCard />
       )}
@@ -247,7 +267,10 @@ function DefensaStudentCard({ proyecto }: { proyecto: Proyecto }) {
               : 'bg-primary-container text-on-primary',
           )}
         >
-          <MaterialIcon name={realizada ? 'workspace_premium' : 'gavel'} size={24} />
+          <MaterialIcon
+            name={realizada ? 'workspace_premium' : 'gavel'}
+            size={24}
+          />
         </div>
         <div>
           <p className="text-label-sm font-bold uppercase tracking-widest text-outline">
@@ -338,7 +361,10 @@ function EditProjectModal({
           }}
         >
           <div className="flex flex-col gap-xs">
-            <label className="text-label-md text-on-surface-variant" htmlFor="edit-titulo">
+            <label
+              className="text-label-md text-on-surface-variant"
+              htmlFor="edit-titulo"
+            >
               Título
             </label>
             <input
@@ -350,7 +376,10 @@ function EditProjectModal({
             />
           </div>
           <div className="flex flex-col gap-xs">
-            <label className="text-label-md text-on-surface-variant" htmlFor="edit-desc">
+            <label
+              className="text-label-md text-on-surface-variant"
+              htmlFor="edit-desc"
+            >
               Descripción (opcional)
             </label>
             <textarea
@@ -432,7 +461,8 @@ function TutorObservations({ observaciones }: { observaciones: Anotacion[] }) {
           Observaciones del Tutor
         </p>
         <span className="rounded-full bg-primary-container px-sm py-[2px] text-[10px] font-bold text-on-primary">
-          {observaciones.filter((o) => o.estado === 'PENDIENTE').length} Pendientes
+          {observaciones.filter((o) => o.estado === 'PENDIENTE').length}{' '}
+          Pendientes
         </span>
       </div>
       <div className="space-y-md">
@@ -514,17 +544,15 @@ function VersionsHistory({ versiones }: { versiones: Version[] }) {
               tabIndex={0}
               onClick={() =>
                 navigate({
-                  to: '/revision/$versionId',
-                  params: { versionId: String(version.id) },
-                  search: {},
+                  to: '/revision',
+                  search: { proyecto: version.proyecto },
                 })
               }
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   navigate({
-                    to: '/revision/$versionId',
-                    params: { versionId: String(version.id) },
-                    search: {},
+                    to: '/revision',
+                    search: { proyecto: version.proyecto },
                   })
                 }
               }}
@@ -533,7 +561,9 @@ function VersionsHistory({ versiones }: { versiones: Version[] }) {
               <div className="flex items-center justify-between">
                 <p className="text-label-md font-bold text-on-surface group-hover:text-primary">
                   Versión {version.numero_version}{' '}
-                  <span className="text-outline">(V{version.numero_version})</span>
+                  <span className="text-outline">
+                    (V{version.numero_version})
+                  </span>
                 </p>
                 <div className="flex items-center gap-xs">
                   <span
@@ -571,7 +601,8 @@ function VersionsHistory({ versiones }: { versiones: Version[] }) {
               </div>
               <p className="mt-xs flex items-center gap-xs truncate text-label-sm text-outline">
                 <MaterialIcon name="description" size={14} />
-                {version.nombre_archivo || `version_${version.numero_version}.pdf`}
+                {version.nombre_archivo ||
+                  `version_${version.numero_version}.pdf`}
               </p>
             </div>
           )
@@ -595,7 +626,9 @@ function RegisterProjectCard() {
           <MaterialIcon name="post_add" size={20} />
         </div>
         <div>
-          <h3 className="text-headline-md text-primary">Registra tu proyecto</h3>
+          <h3 className="text-headline-md text-primary">
+            Registra tu proyecto
+          </h3>
           <p className="text-body-sm text-on-surface-variant">
             El primer paso de tu proceso de titulación.
           </p>
@@ -609,7 +642,10 @@ function RegisterProjectCard() {
         }}
       >
         <div className="flex flex-col gap-xs">
-          <label className="text-label-md text-on-surface-variant" htmlFor="titulo">
+          <label
+            className="text-label-md text-on-surface-variant"
+            htmlFor="titulo"
+          >
             Título del proyecto
           </label>
           <input
@@ -688,7 +724,10 @@ function NewVersionModal({
           }}
         >
           <div className="flex flex-col gap-xs">
-            <label className="text-label-md text-on-surface-variant" htmlFor="drive-url">
+            <label
+              className="text-label-md text-on-surface-variant"
+              htmlFor="drive-url"
+            >
               Link de Google Drive
             </label>
             <input
@@ -700,7 +739,10 @@ function NewVersionModal({
             />
           </div>
           <div className="flex flex-col gap-xs">
-            <label className="text-label-md text-on-surface-variant" htmlFor="file-name">
+            <label
+              className="text-label-md text-on-surface-variant"
+              htmlFor="file-name"
+            >
               Nombre del archivo (opcional)
             </label>
             <input
@@ -736,5 +778,75 @@ function NewVersionModal({
         </form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function PropuestaEnRevisionCard({ proyecto }: { proyecto: Proyecto }) {
+  const rechazada =
+    proyecto.estado === 'EN REVISION' && !!proyecto.motivo_rechazo
+  return (
+    <section
+      className={cn(
+        'rounded-xl border p-lg',
+        rechazada
+          ? 'border-error bg-error-container'
+          : 'border-[#FDE68A] bg-[#FFFBEB]',
+      )}
+    >
+      <div className="flex items-start gap-md">
+        <div
+          className={cn(
+            'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
+            rechazada ? 'bg-error text-on-error' : 'bg-[#F59E0B] text-white',
+          )}
+        >
+          <MaterialIcon
+            name={rechazada ? 'cancel' : 'hourglass_top'}
+            size={24}
+          />
+        </div>
+        <div className="min-w-0">
+          <p className="text-label-sm font-bold uppercase tracking-widest text-outline">
+            {rechazada ? 'Propuesta rechazada' : 'Propuesta en revisión'}
+          </p>
+          <p className="mt-xs text-label-md font-bold text-on-surface">
+            {rechazada
+              ? 'Tu propuesta fue rechazada. Puedes corregirla y volver a presentarla.'
+              : 'Tu propuesta está siendo evaluada por el docente de la materia. Te notificaremos cuando sea aprobada.'}
+          </p>
+          {rechazada && proyecto.motivo_rechazo && (
+            <p className="mt-sm rounded-lg bg-white/60 p-sm text-body-sm text-on-error-container">
+              <span className="font-bold">Motivo: </span>
+              {proyecto.motivo_rechazo}
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function ObservationMatrixSection({ proyectoId }: { proyectoId: number }) {
+  const { data: observaciones = [], isLoading } = useQuery({
+    queryKey: ['anotaciones', 'proyecto', proyectoId],
+    queryFn: async () => {
+      const { data } = await api.get<Anotacion[]>(
+        `/api/projects/${proyectoId}/annotations/`,
+      )
+      return data
+    },
+  })
+
+  return (
+    <section className="rounded-xl border border-outline-variant bg-white p-lg">
+      <p className="mb-md text-label-sm font-bold uppercase tracking-widest text-outline">
+        Matriz de Observaciones
+      </p>
+      {isLoading ? (
+        <p className="text-body-sm text-outline">Cargando…</p>
+      ) : (
+        <ObservationMatrix observaciones={observaciones} />
+      )}
+    </section>
   )
 }
