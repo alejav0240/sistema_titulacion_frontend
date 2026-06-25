@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '@tanstack/react-store'
 import {
   addMonths,
@@ -26,7 +26,7 @@ import {
 } from '#/components/ui/dialog'
 import { authStore } from '#/hooks/useAuthStore'
 import { useProjects } from '#/hooks/useProjects'
-import { useCreateEvento, useDeleteEvento, useSchedules } from '#/hooks/useSchedules'
+import { useCreateEvento, useDeleteEvento, useUpdateEvento, useSchedules } from '#/hooks/useSchedules'
 import { formatDate } from '#/lib/datetime'
 import { cn } from '#/lib/utils'
 import { ETAPAS, ETAPA_LABELS } from '#/types/project'
@@ -61,6 +61,7 @@ function CronogramaPage() {
 
   const [month, setMonth] = useState(() => new Date())
   const [modalOpen, setModalOpen] = useState(false)
+  const [editingEvento, setEditingEvento] = useState<EventoCronograma | null>(null)
   const schedules = useSchedules()
   const eventos = schedules.data ?? []
 
@@ -151,6 +152,7 @@ function CronogramaPage() {
             <TimelineView
               eventos={eventos}
               isDirector={isDirector}
+              onEdit={setEditingEvento}
             />
           )}
           {vista === 'gantt' && isDirector && <GanttView />}
@@ -203,6 +205,11 @@ function CronogramaPage() {
       </div>
 
       <NuevoEventoModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <NuevoEventoModal
+        open={!!editingEvento}
+        onClose={() => setEditingEvento(null)}
+        evento={editingEvento ?? undefined}
+      />
     </div>
   )
 }
@@ -285,9 +292,11 @@ function CalendarView({
 function TimelineView({
   eventos,
   isDirector,
+  onEdit,
 }: {
   eventos: EventoCronograma[]
   isDirector: boolean
+  onEdit: (evento: EventoCronograma) => void
 }) {
   const deleteEvento = useDeleteEvento()
   const ordered = [...eventos].sort(
@@ -331,14 +340,24 @@ function TimelineView({
                   </p>
                 </div>
                 {isDirector && (
-                  <button
-                    type="button"
-                    onClick={() => deleteEvento.mutate(evento.id)}
-                    title="Eliminar evento"
-                    className="rounded p-xs text-outline transition-colors hover:text-error"
-                  >
-                    <MaterialIcon name="delete" size={16} />
-                  </button>
+                  <div className="flex gap-xs">
+                    <button
+                      type="button"
+                      onClick={() => onEdit(evento)}
+                      title="Editar evento"
+                      className="rounded p-xs text-outline transition-colors hover:text-primary"
+                    >
+                      <MaterialIcon name="edit" size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteEvento.mutate(evento.id)}
+                      title="Eliminar evento"
+                      className="rounded p-xs text-outline transition-colors hover:text-error"
+                    >
+                      <MaterialIcon name="delete" size={16} />
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -410,16 +429,32 @@ function GanttView() {
 function NuevoEventoModal({
   open,
   onClose,
+  evento,
 }: {
   open: boolean
   onClose: () => void
+  evento?: EventoCronograma
 }) {
-  const [descripcion, setDescripcion] = useState('')
-  const [tipo, setTipo] = useState('ENTREGA')
-  const [publico, setPublico] = useState('TODOS')
-  const [fechaInicio, setFechaInicio] = useState('')
-  const [fechaFin, setFechaFin] = useState('')
+  const isEditing = !!evento
+  const [descripcion, setDescripcion] = useState(evento?.descripcion ?? '')
+  const [tipo, setTipo] = useState<'ENTREGA' | 'REVISION' | 'DEFENSA' | 'ADMINISTRATIVO'>(
+    (evento?.tipo as 'ENTREGA' | 'REVISION' | 'DEFENSA' | 'ADMINISTRATIVO') ?? 'ENTREGA'
+  )
+  const [publico, setPublico] = useState<'TODOS' | 'ESTUDIANTES' | 'DOCENTES'>(
+    (evento?.publico_objetivo as 'TODOS' | 'ESTUDIANTES' | 'DOCENTES') ?? 'TODOS'
+  )
+  const [fechaInicio, setFechaInicio] = useState(evento?.fecha_inicio ?? '')
+  const [fechaFin, setFechaFin] = useState(evento?.fecha_fin ?? '')
   const create = useCreateEvento()
+  const update = useUpdateEvento()
+
+  useEffect(() => {
+    setDescripcion(evento?.descripcion ?? '')
+    setTipo(evento?.tipo ?? 'ENTREGA')
+    setPublico(evento?.publico_objetivo ?? 'TODOS')
+    setFechaInicio(evento?.fecha_inicio ?? '')
+    setFechaFin(evento?.fecha_fin ?? '')
+  }, [evento])
 
   const inputClass =
     'h-[44px] w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-md text-body-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary-container'
@@ -429,7 +464,7 @@ function NuevoEventoModal({
       <DialogContent className="rounded-xl border-outline-variant sm:max-w-[28rem]">
         <DialogHeader>
           <DialogTitle className="text-headline-md text-primary">
-            Nuevo evento del cronograma
+            {isEditing ? 'Editar evento' : 'Nuevo evento del cronograma'}
           </DialogTitle>
           <DialogDescription className="text-body-sm text-on-surface-variant">
             El evento será visible para el público objetivo seleccionado.
@@ -440,24 +475,26 @@ function NuevoEventoModal({
           onSubmit={(e) => {
             e.preventDefault()
             if (!descripcion.trim() || !fechaInicio) return
-            create.mutate(
-              {
-                descripcion: descripcion.trim(),
-                tipo,
-                publico_objetivo: publico,
-                fecha_inicio: fechaInicio,
-                fecha_fin: fechaFin || fechaInicio,
-                semestre: 1,
-              },
-              {
+            const payload = {
+              descripcion: descripcion.trim(),
+              tipo,
+              publico_objetivo: publico,
+              fecha_inicio: fechaInicio,
+              fecha_fin: fechaFin || fechaInicio,
+              semestre: 1,
+            }
+            if (isEditing && evento) {
+              update.mutate({ id: evento.id, ...payload }, { onSuccess: onClose })
+            } else {
+              create.mutate(payload, {
                 onSuccess: () => {
                   setDescripcion('')
                   setFechaInicio('')
                   setFechaFin('')
                   onClose()
                 },
-              },
-            )
+              })
+            }
           }}
         >
           <div className="flex flex-col gap-xs">
@@ -480,7 +517,7 @@ function NuevoEventoModal({
               <select
                 id="e-tipo"
                 value={tipo}
-                onChange={(e) => setTipo(e.target.value)}
+                onChange={(e) => setTipo(e.target.value as 'ENTREGA' | 'REVISION' | 'DEFENSA' | 'ADMINISTRATIVO')}
                 className={inputClass}
               >
                 <option value="ENTREGA">Entrega</option>
@@ -496,7 +533,7 @@ function NuevoEventoModal({
               <select
                 id="e-pub"
                 value={publico}
-                onChange={(e) => setPublico(e.target.value)}
+                onChange={(e) => setPublico(e.target.value as 'TODOS' | 'ESTUDIANTES' | 'DOCENTES')}
                 className={inputClass}
               >
                 <option value="TODOS">Todos</option>
@@ -531,9 +568,9 @@ function NuevoEventoModal({
               />
             </div>
           </div>
-          {create.isError && (
+          {(create.isError || update.isError) && (
             <p className="rounded-lg bg-error-container p-sm text-body-sm text-on-error-container">
-              No se pudo crear el evento.
+              No se pudo guardar el evento.
             </p>
           )}
           <div className="flex justify-end gap-sm">
@@ -546,10 +583,10 @@ function NuevoEventoModal({
             </button>
             <button
               type="submit"
-              disabled={create.isPending || !descripcion.trim() || !fechaInicio}
+              disabled={(create.isPending || update.isPending) || !descripcion.trim() || !fechaInicio}
               className="rounded-xl bg-primary-container px-lg py-sm text-label-md font-bold text-on-primary transition-all hover:brightness-110 disabled:opacity-50"
             >
-              {create.isPending ? 'Creando…' : 'Crear evento'}
+              {(create.isPending || update.isPending) ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Crear evento'}
             </button>
           </div>
         </form>
