@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '@tanstack/react-store'
 import { z } from 'zod'
 import { CommentPopover } from '#/components/pdf/CommentPopover'
@@ -47,6 +47,20 @@ function RevisionPage() {
   const [drawMode, setDrawMode] = useState(false)
   const [draft, setDraft] = useState<RectNormalizado | null>(null)
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [subsanarTarget, setSubsanarTarget] = useState<number | null>(null)
+  const [subsanarDraft, setSubsanarDraft] = useState<
+    (RectNormalizado & { targetId: number }) | null
+  >(null)
+
+  // Limpiar subsanarDraft si la anotación objetivo ya no está pendiente
+  useEffect(() => {
+    if (!subsanarDraft) return
+    const ann = annotations.data?.find((a) => a.id === subsanarDraft.targetId)
+    if (ann && ann.estado !== 'PENDIENTE') {
+      setSubsanarDraft(null)
+      setSubsanarTarget(null)
+    }
+  }, [annotations.data, subsanarDraft])
 
   const isRevisor = user?.rol !== 'ESTUDIANTE'
   const isOwner = user?.rol === 'ESTUDIANTE'
@@ -181,6 +195,16 @@ function RevisionPage() {
           isOwner={isOwner}
           selectedId={selectedId}
           onSelect={handleSelect}
+          onSubsanarDraw={(id) => {
+            setSubsanarTarget(id)
+            setSubsanarDraft(null)
+            setDrawMode(true)
+          }}
+          subsanarDraft={subsanarDraft}
+          onSubsanarReset={() => {
+            setSubsanarDraft(null)
+            setSubsanarTarget(null)
+          }}
         />
 
         <section className="relative flex w-[65%] flex-1 flex-col overflow-hidden bg-[#f1f1f1] p-lg">
@@ -206,8 +230,14 @@ function RevisionPage() {
                 onSelect={(annotationId) => setSelectedId(annotationId)}
                 drawMode={drawMode}
                 onDrawComplete={({ pagina, x, y, ancho, alto }) => {
-                  setDraft({ pagina, x, y, ancho, alto })
-                  setDrawMode(false)
+                  if (subsanarTarget !== null) {
+                    setSubsanarDraft({ targetId: subsanarTarget, pagina, x, y, ancho, alto })
+                    setSubsanarTarget(null)
+                    setDrawMode(false)
+                  } else {
+                    setDraft({ pagina, x, y, ancho, alto })
+                    setDrawMode(false)
+                  }
                 }}
                 onLoaded={setNumPages}
               />

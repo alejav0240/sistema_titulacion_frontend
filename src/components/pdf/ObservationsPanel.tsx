@@ -1,5 +1,5 @@
 import { ObservationCard } from './ObservationCard'
-import type { Anotacion } from '#/types/annotation'
+import type { Anotacion, RectNormalizado } from '#/types/annotation'
 
 export function ObservationsPanel({
   annotations,
@@ -7,12 +7,18 @@ export function ObservationsPanel({
   isOwner,
   selectedId,
   onSelect,
+  onSubsanarDraw,
+  subsanarDraft,
+  onSubsanarReset,
 }: {
   annotations: Anotacion[]
   isRevisor: boolean
   isOwner: boolean
   selectedId: number | null
   onSelect: (anotacion: Anotacion) => void
+  onSubsanarDraw?: (id: number) => void
+  subsanarDraft?: (RectNormalizado & { targetId: number }) | null
+  onSubsanarReset?: () => void
 }) {
   const pendientes = annotations.filter((a) => a.estado === 'PENDIENTE').length
 
@@ -43,6 +49,15 @@ export function ObservationsPanel({
             isOwner={isOwner}
             selected={selectedId === anotacion.id}
             onClick={() => onSelect(anotacion)}
+            onRequestDraw={
+              onSubsanarDraw ? () => onSubsanarDraw(anotacion.id) : undefined
+            }
+            subsanarDraft={
+              subsanarDraft?.targetId === anotacion.id
+                ? subsanarDraft
+                : undefined
+            }
+            onSubsanarReset={onSubsanarReset}
           />
         ))}
       </div>

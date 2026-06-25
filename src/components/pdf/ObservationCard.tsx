@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import {
   useAnnotationHistory,
@@ -9,7 +9,7 @@ import {
 } from '#/hooks/useAnnotations'
 import { timeAgo } from '#/lib/datetime'
 import { cn } from '#/lib/utils'
-import type { Anotacion } from '#/types/annotation'
+import type { Anotacion, RectNormalizado } from '#/types/annotation'
 
 const EVENTO_LABELS: Record<string, string> = {
   CREACION: 'Observación creada',
@@ -21,7 +21,7 @@ const EVENTO_LABELS: Record<string, string> = {
 function SeverityBadge({ anotacion }: { anotacion: Anotacion }) {
   if (anotacion.estado === 'SUBSANADA') {
     return (
-      <span className="rounded bg-green-100 px-xs py-[2px] text-[10px] font-bold uppercase tracking-wider text-green-700">
+      <span className="rounded bg-[#FEF3C7] px-xs py-[2px] text-[10px] font-bold uppercase tracking-wider text-[#92400E]">
         Subsanada
       </span>
     )
@@ -50,12 +50,18 @@ export function ObservationCard({
   isOwner,
   selected,
   onClick,
+  onRequestDraw,
+  subsanarDraft,
+  onSubsanarReset,
 }: {
   anotacion: Anotacion
   isRevisor: boolean
   isOwner: boolean
   selected: boolean
   onClick: () => void
+  onRequestDraw?: () => void
+  subsanarDraft?: RectNormalizado
+  onSubsanarReset?: () => void
 }) {
   const [feedback, setFeedback] = useState('')
   const [subsanando, setSubsanando] = useState(false)
@@ -70,13 +76,21 @@ export function ObservationCard({
 
   const texto = anotacion.nota_observacion?.comentario ?? ''
 
+  // Auto-expandir historial cuando la anotación fue reobservada:
+  // el estudiante necesita ver el motivo del revisor sin tener que buscarlo
+  useEffect(() => {
+    if (anotacion.accion_realizada && anotacion.estado === 'PENDIENTE') {
+      setShowHistory(true)
+    }
+  }, [anotacion.id, anotacion.estado, anotacion.accion_realizada])
+
   return (
     <div
       onClick={onClick}
       className={cn(
         'cursor-pointer space-y-sm rounded-lg border bg-surface-container-lowest p-md shadow-sm transition-all',
         anotacion.estado === 'SUBSANADA'
-          ? 'border-green-300 bg-green-50/50'
+          ? 'border-yellow-300 bg-yellow-50/50'
           : 'border-outline-variant',
         selected && 'ring-2 ring-primary-container',
       )}
@@ -93,6 +107,11 @@ export function ObservationCard({
           <span className="text-label-sm font-bold text-primary">
             {anotacion.codigo_display}
           </span>
+          {anotacion.version_numero != null && (
+            <span className="rounded bg-primary/10 px-xs py-[1px] text-[9px] font-bold text-primary">
+              V{anotacion.version_numero}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-xs">
           <button
@@ -181,8 +200,19 @@ export function ObservationCard({
           )}
         </div>
 
-        {anotacion.estado === 'SUBSANADA' && anotacion.accion_realizada && (
-          <p className="rounded bg-green-100/60 px-sm py-xs text-label-sm text-green-800">
+        {/* Corrección del estudiante — visible siempre que exista, no solo en SUBSANADA */}
+        {anotacion.accion_realizada && (
+          <p
+            className={cn(
+              'rounded px-sm py-xs text-label-sm',
+              anotacion.estado === 'SUBSANADA'
+                ? 'bg-yellow-100/60 text-yellow-900'
+                : 'bg-surface-container text-on-surface-variant',
+            )}
+          >
+            {anotacion.estado !== 'SUBSANADA' && (
+              <span className="font-bold">Corrección anterior: </span>
+            )}
             {anotacion.accion_realizada}
           </p>
         )}
@@ -203,33 +233,79 @@ export function ObservationCard({
             className="flex flex-col gap-sm"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Selector de área en el documento */}
+            {subsanarDraft ? (
+              <div className="flex items-center gap-sm">
+                <span className="flex items-center gap-xs rounded-full bg-green-100 px-sm py-1 text-[10px] font-bold text-green-700">
+                  <MaterialIcon name="check_circle" size={12} />
+                  Área marcada
+                </span>
+                <button
+                  type="button"
+                  onClick={onRequestDraw}
+                  className="text-[10px] text-outline underline hover:text-primary"
+                >
+                  Redibujar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onRequestDraw}
+                className="flex items-center justify-center gap-xs rounded-lg border-2 border-dashed border-primary/40 py-sm text-label-sm text-primary transition-colors hover:border-primary hover:bg-primary/5"
+              >
+                <MaterialIcon name="draw" size={16} />
+                Dibujar en documento
+              </button>
+            )}
+
             <textarea
               value={comentario}
               onChange={(e) => setComentario(e.target.value)}
-              placeholder="Describe cómo corregiste esta observación..."
+              disabled={!subsanarDraft}
+              placeholder={
+                subsanarDraft
+                  ? 'Describe cómo corregiste esta observación...'
+                  : 'Marca el área en el documento primero'
+              }
               rows={2}
-              className="w-full rounded-md border border-outline-variant px-sm py-1.5 text-body-sm focus:border-primary focus:ring-primary"
+              className="w-full rounded-md border border-outline-variant px-sm py-1.5 text-body-sm focus:border-primary focus:ring-primary disabled:bg-surface-container disabled:opacity-50"
             />
             <div className="flex justify-end gap-xs">
               <button
                 type="button"
-                onClick={() => setSubsanando(false)}
+                onClick={() => {
+                  setSubsanando(false)
+                  setComentario('')
+                  onSubsanarReset?.()
+                }}
                 className="px-sm py-1 text-[10px] font-bold uppercase text-secondary"
               >
                 Cancelar
               </button>
               <button
                 type="button"
-                disabled={!comentario.trim() || subsanar.isPending}
+                disabled={!comentario.trim() || !subsanarDraft || subsanar.isPending}
                 onClick={() => {
+                  if (!subsanarDraft) return
                   subsanar.mutate(
-                    { id: anotacion.id, comentario: comentario.trim() },
-                    { onSuccess: () => setSubsanando(false) },
+                    {
+                      id: anotacion.id,
+                      comentario: comentario.trim(),
+                      rect: subsanarDraft,
+                    },
+                    {
+                      onSuccess: () => {
+                        setSubsanando(false)
+                        setComentario('')
+                        onSubsanarReset?.()
+                      },
+                    },
                   )
                 }}
-                className="rounded bg-green-600 px-sm py-1 text-[10px] font-bold uppercase text-white hover:bg-green-700 disabled:opacity-50"
+                className="rounded bg-amber-500 px-sm py-1 text-[10px] font-bold uppercase text-white hover:bg-amber-600 disabled:opacity-50"
               >
-                Marcar subsanada
+                {subsanar.isPending ? 'Enviando…' : 'Confirmar'}
               </button>
             </div>
           </div>

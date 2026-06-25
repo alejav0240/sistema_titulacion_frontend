@@ -143,6 +143,10 @@ export default function PdfDocumentView({
     (a) => a.nota_observacion && a.nota_observacion.pagina === pageNumber,
   )
 
+  const pageCorrections = annotations.filter(
+    (a) => a.nota_correccion && a.nota_correccion.pagina === pageNumber,
+  )
+
   return (
     <div
       ref={containerRef}
@@ -213,6 +217,43 @@ export default function PdfDocumentView({
                   {a.codigo_display}
                 </span>
               </button>
+            )
+          })}
+
+          {/* Rects de corrección del estudiante (nota_correccion) */}
+          {pageCorrections.map((a) => {
+            const nota = a.nota_correccion!
+            const aprobada = a.estado === 'APROBADA'
+            return (
+              <div
+                key={`corr-${a.id}`}
+                title={`Corrección ${a.codigo_display}`}
+                className="pointer-events-none absolute rounded-[2px]"
+                style={{
+                  ...rectStyle({
+                    x: Number(nota.x),
+                    y: Number(nota.y),
+                    ancho: Number(nota.ancho),
+                    alto: Number(nota.alto),
+                  }),
+                  borderBottom: `2px solid ${aprobada ? '#22c55e' : '#3b82f6'}`,
+                  backgroundColor: aprobada
+                    ? 'rgba(34,197,94,0.15)'
+                    : 'rgba(59,130,246,0.15)',
+                }}
+              >
+                <span
+                  className="absolute -top-5 right-0 rounded px-xs text-[9px] font-bold"
+                  style={{
+                    color: aprobada ? '#16a34a' : '#1d4ed8',
+                    backgroundColor: aprobada
+                      ? 'rgba(220,252,231,0.9)'
+                      : 'rgba(219,234,254,0.9)',
+                  }}
+                >
+                  {a.codigo_display} ✓
+                </span>
+              </div>
             )
           })}
 
