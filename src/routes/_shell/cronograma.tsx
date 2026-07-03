@@ -1,74 +1,65 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useStore } from '@tanstack/react-store'
-import {
-  addMonths,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-  isSameDay,
-  isSameMonth,
-  isToday,
-  parseISO,
-  startOfMonth,
-  startOfWeek,
-} from 'date-fns'
+import { addMonths, format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { toast } from 'sonner'
 import { z } from 'zod'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
+import { CsvImportModal } from '#/components/ui/CsvImportModal'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '#/components/ui/dialog'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '#/components/ui/dropdown-menu'
+import { CalendarView } from '#/components/cronograma/CalendarView'
+import { TimelineView } from '#/components/cronograma/TimelineView'
+import { GanttView } from '#/components/cronograma/GanttView'
+import { TableView } from '#/components/cronograma/TableView'
+import { NuevoEventoModal } from '#/components/cronograma/NuevoEventoModal'
+import { publicosLabel, tipoStyle } from '#/components/cronograma/shared'
 import { authStore } from '#/hooks/useAuthStore'
-import { useProjects } from '#/hooks/useProjects'
-import { useCreateEvento, useDeleteEvento, useUpdateEvento, useSchedules } from '#/hooks/useSchedules'
+import {
+  downloadCronogramaExport,
+  useImportCronograma,
+  useSchedules,
+} from '#/hooks/useSchedules'
 import { formatDate } from '#/lib/datetime'
 import { cn } from '#/lib/utils'
-import { ETAPAS, ETAPA_LABELS } from '#/types/project'
 import type { EventoCronograma } from '#/types/dashboard'
 
 export const Route = createFileRoute('/_shell/cronograma')({
   validateSearch: z.object({
-    vista: z.enum(['calendario', 'timeline', 'gantt']).optional(),
+    vista: z.enum(['calendario', 'timeline', 'gantt', 'tabla']).optional(),
   }),
   component: CronogramaPage,
 })
-
-const TIPO_STYLES: Record<string, { chip: string; label: string }> = {
-  ENTREGA: { chip: 'bg-error-container text-on-error-container', label: 'Fecha límite' },
-  REVISION: { chip: 'bg-[#FEF3C7] text-[#92400E]', label: 'Revisión' },
-  DEFENSA: { chip: 'bg-secondary-container text-on-secondary-container', label: 'Defensa' },
-  ADMINISTRATIVO: { chip: 'bg-surface-container text-on-surface-variant', label: 'Administrativo' },
-}
-
-const TIPO_DOTS: Record<string, string> = {
-  ENTREGA: 'bg-error',
-  REVISION: 'bg-[#F59E0B]',
-  DEFENSA: 'bg-secondary',
-  ADMINISTRATIVO: 'bg-outline',
-}
 
 function CronogramaPage() {
   const { vista = 'calendario' } = Route.useSearch()
   const navigate = Route.useNavigate()
   const user = useStore(authStore, (s) => s.user)
-  const isDirector = user?.rol === 'DIRECTOR' || user?.rol === 'DTC'
+  const isAdmin = user?.rol === 'DIRECTOR' || user?.rol === 'DTC'
+  // TUTOR y TRIBUNAL son solo lectura en el cronograma
+  const canCreate = isAdmin || user?.rol === 'DOCENTE'
 
   const [month, setMonth] = useState(() => new Date())
   const [modalOpen, setModalOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [editingEvento, setEditingEvento] = useState<EventoCronograma | null>(null)
   const schedules = useSchedules()
+  const importCronograma = useImportCronograma()
   const eventos = schedules.data ?? []
+
+  const canEditEvento = (evento: EventoCronograma) =>
+    isAdmin || (canCreate && evento.creado_por_id === (user?.id ?? -1))
 
   const tabs = [
     ['calendario', 'calendar_month', 'Calendario'],
     ['timeline', 'view_timeline', 'Timeline'],
-    ...(isDirector ? [['gantt', 'align_horizontal_left', 'Gantt']] : []),
+    ['gantt', 'align_horizontal_left', 'Gantt'],
+    ['tabla', 'table_rows', 'Tabla'],
   ] as const
 
   const proximos = eventos
@@ -83,9 +74,7 @@ function CronogramaPage() {
             <button
               key={key}
               type="button"
-              onClick={() =>
-                navigate({ search: { vista: key as never }, replace: true })
-              }
+              onClick={() => navigate({ search: { vista: key as never }, replace: true })}
               className={cn(
                 'flex items-center gap-xs rounded-md px-md py-sm text-label-md transition-all',
                 vista === key
@@ -130,32 +119,80 @@ function CronogramaPage() {
               </button>
             </>
           )}
-          {isDirector && (
-            <button
-              type="button"
-              onClick={() => setModalOpen(true)}
-              className="flex items-center gap-xs rounded-lg bg-primary-container px-md py-sm text-label-md font-bold text-on-primary transition-all hover:brightness-110"
-            >
-              <MaterialIcon name="add" size={18} />
-              Añadir
-            </button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-xs rounded-lg border border-outline-variant bg-white px-md py-sm text-label-md text-on-surface transition-all hover:bg-surface-container-low"
+              >
+                <MaterialIcon name="ios_share" size={18} />
+                Exportar
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => downloadCronogramaExport('xlsx')}>
+                <MaterialIcon name="table_view" size={18} />
+                Excel (.xlsx)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadCronogramaExport('pdf')}>
+                <MaterialIcon name="picture_as_pdf" size={18} />
+                PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {canCreate && (
+            <>
+              <button
+                type="button"
+                onClick={() => setImportOpen(true)}
+                className="flex items-center gap-xs rounded-lg border border-outline-variant bg-white px-md py-sm text-label-md text-on-surface-variant transition-colors hover:text-primary"
+              >
+                <MaterialIcon name="upload_file" size={18} />
+                Importar
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalOpen(true)}
+                className="flex items-center gap-xs rounded-lg bg-primary-container px-md py-sm text-label-md font-bold text-on-primary transition-all hover:brightness-110"
+              >
+                <MaterialIcon name="add" size={18} />
+                Añadir
+              </button>
+            </>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-lg xl:grid-cols-4">
         <div className="xl:col-span-3">
-          {vista === 'calendario' && (
-            <CalendarView month={month} eventos={eventos} />
-          )}
+          {schedules.isLoading ? (
+            <p className="py-xl text-center text-body-sm text-outline">
+              Cargando cronograma…
+            </p>
+          ) : (
+            <>
+          {vista === 'calendario' && <CalendarView month={month} eventos={eventos} />}
           {vista === 'timeline' && (
             <TimelineView
               eventos={eventos}
-              isDirector={isDirector}
+              currentUserId={user?.id ?? null}
+              isAdmin={isAdmin}
               onEdit={setEditingEvento}
             />
           )}
-          {vista === 'gantt' && isDirector && <GanttView />}
+          {vista === 'gantt' && <GanttView eventos={eventos} />}
+          {vista === 'tabla' && (
+            <TableView
+              eventos={eventos}
+              canCreate={canCreate}
+              canEdit={canEditEvento}
+              onEdit={setEditingEvento}
+            />
+          )}
+            </>
+          )}
         </div>
 
         {/* Próximos eventos */}
@@ -164,35 +201,20 @@ function CronogramaPage() {
             Próximos eventos
           </h3>
           {proximos.map((evento) => {
-            const estilo = TIPO_STYLES[evento.tipo] ?? TIPO_STYLES.ADMINISTRATIVO
+            const estilo = tipoStyle(evento.tipo)
             return (
               <div
                 key={evento.id}
                 className="rounded-xl border border-outline-variant bg-white p-md"
               >
                 <div className="flex items-center justify-between">
-                  <span
-                    className={cn(
-                      'rounded px-xs py-[2px] text-[9px] font-bold uppercase tracking-wider',
-                      estilo.chip,
-                    )}
-                  >
+                  <span className={cn('rounded px-xs py-[2px] text-[9px] font-bold uppercase tracking-wider', estilo.chip)}>
                     {estilo.label}
                   </span>
-                  <span className="text-label-sm text-outline">
-                    {formatDate(evento.fecha_inicio)}
-                  </span>
+                  <span className="text-label-sm text-outline">{formatDate(evento.fecha_inicio)}</span>
                 </div>
-                <p className="mt-xs text-label-md font-bold text-on-surface">
-                  {evento.descripcion}
-                </p>
-                <p className="text-label-sm text-outline">
-                  {evento.publico_objetivo === 'TODOS'
-                    ? 'Todos'
-                    : evento.publico_objetivo === 'ESTUDIANTES'
-                      ? 'Estudiantes'
-                      : 'Docentes'}
-                </p>
+                <p className="mt-xs text-label-md font-bold text-on-surface">{evento.descripcion}</p>
+                <p className="text-label-sm text-outline">{publicosLabel(evento)}</p>
               </div>
             )
           })}
@@ -210,387 +232,25 @@ function CronogramaPage() {
         onClose={() => setEditingEvento(null)}
         evento={editingEvento ?? undefined}
       />
+
+      <CsvImportModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title="Importar Actividades"
+        columns={['descripcion', 'tipo', 'grupos', 'publicos', 'fechainicio', 'fechafin']}
+        exampleRows={[
+          'ENTREGA PROPUESTA,ENTREGA,GRUPO A|GRUPO B,ESTUDIANTES,2026-08-01,2026-08-05',
+          'DEFENSA FINAL,DEFENSA,,DOCENTES|ESTUDIANTES,2026-11-20,2026-11-20',
+        ]}
+        helpText="Separa varios grupos/públicos con | o ;. Vacíos = todos. Fechas en formato YYYY-MM-DD. Públicos válidos: ESTUDIANTES, DOCENTES, TUTORES, TRIBUNALES."
+        onImport={async (file) => {
+          const result = await importCronograma.mutateAsync(file)
+          const partes = [`${result.creados} creados`]
+          if (result.errors.length) partes.push(`${result.errors.length} errores`)
+          toast.info(partes.join(', ') + '.')
+        }}
+        pending={importCronograma.isPending}
+      />
     </div>
-  )
-}
-
-function CalendarView({
-  month,
-  eventos,
-}: {
-  month: Date
-  eventos: EventoCronograma[]
-}) {
-  const days = eachDayOfInterval({
-    start: startOfWeek(startOfMonth(month), { weekStartsOn: 1 }),
-    end: endOfWeek(endOfMonth(month), { weekStartsOn: 1 }),
-  })
-
-  return (
-    <div className="overflow-hidden rounded-xl border border-outline-variant bg-white">
-      <div className="grid grid-cols-7 border-b border-outline-variant bg-surface-container-low">
-        {['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'].map((dia) => (
-          <span
-            key={dia}
-            className="py-sm text-center text-[10px] font-bold uppercase tracking-wider text-outline"
-          >
-            {dia}
-          </span>
-        ))}
-      </div>
-      <div className="grid grid-cols-7">
-        {days.map((day) => {
-          const delDia = eventos.filter((evento) =>
-            isSameDay(parseISO(evento.fecha_inicio), day),
-          )
-          return (
-            <div
-              key={day.toISOString()}
-              className={cn(
-                'min-h-[92px] border-b border-r border-outline-variant/40 p-xs',
-                !isSameMonth(day, month) && 'bg-surface-container-low/50',
-                isToday(day) && 'bg-primary-fixed/20',
-              )}
-            >
-              <span
-                className={cn(
-                  'text-label-sm',
-                  isSameMonth(day, month)
-                    ? 'text-on-surface'
-                    : 'text-outline-variant',
-                  isToday(day) &&
-                    'inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary-container font-bold text-on-primary',
-                )}
-              >
-                {format(day, 'd')}
-              </span>
-              <div className="mt-xs space-y-[2px]">
-                {delDia.slice(0, 2).map((evento) => (
-                  <p
-                    key={evento.id}
-                    title={evento.descripcion}
-                    className={cn(
-                      'truncate rounded px-xs text-[9px] font-bold',
-                      (TIPO_STYLES[evento.tipo] ?? TIPO_STYLES.ADMINISTRATIVO).chip,
-                    )}
-                  >
-                    {evento.descripcion}
-                  </p>
-                ))}
-                {delDia.length > 2 && (
-                  <p className="text-[9px] text-outline">+{delDia.length - 2} más</p>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function TimelineView({
-  eventos,
-  isDirector,
-  onEdit,
-}: {
-  eventos: EventoCronograma[]
-  isDirector: boolean
-  onEdit: (evento: EventoCronograma) => void
-}) {
-  const deleteEvento = useDeleteEvento()
-  const ordered = [...eventos].sort(
-    (a, b) => +new Date(a.fecha_inicio) - +new Date(b.fecha_inicio),
-  )
-
-  return (
-    <div className="rounded-xl border border-outline-variant bg-white p-lg">
-      <div className="relative space-y-lg">
-        <div className="absolute bottom-2 left-[7px] top-2 w-px bg-outline-variant" />
-        {ordered.map((evento) => {
-          const estilo = TIPO_STYLES[evento.tipo] ?? TIPO_STYLES.ADMINISTRATIVO
-          return (
-            <div key={evento.id} className="relative flex gap-md">
-              <span
-                className={cn(
-                  'z-10 mt-1 h-4 w-4 shrink-0 rounded-full ring-4 ring-white',
-                  TIPO_DOTS[evento.tipo] ?? 'bg-outline',
-                )}
-              />
-              <div className="flex flex-1 items-start justify-between gap-md">
-                <div>
-                  <div className="flex items-center gap-sm">
-                    <p className="text-label-md font-bold text-on-surface">
-                      {evento.descripcion}
-                    </p>
-                    <span
-                      className={cn(
-                        'rounded px-xs py-[1px] text-[9px] font-bold uppercase tracking-wider',
-                        estilo.chip,
-                      )}
-                    >
-                      {estilo.label}
-                    </span>
-                  </div>
-                  <p className="text-label-sm text-outline">
-                    {formatDate(evento.fecha_inicio)}
-                    {evento.fecha_fin !== evento.fecha_inicio &&
-                      ` → ${formatDate(evento.fecha_fin)}`}{' '}
-                    · {evento.publico_objetivo.toLowerCase()}
-                  </p>
-                </div>
-                {isDirector && (
-                  <div className="flex gap-xs">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(evento)}
-                      title="Editar evento"
-                      className="rounded p-xs text-outline transition-colors hover:text-primary"
-                    >
-                      <MaterialIcon name="edit" size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => deleteEvento.mutate(evento.id)}
-                      title="Eliminar evento"
-                      className="rounded p-xs text-outline transition-colors hover:text-error"
-                    >
-                      <MaterialIcon name="delete" size={16} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })}
-        {ordered.length === 0 && (
-          <p className="py-lg text-center text-body-sm text-outline">
-            No hay eventos registrados.
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function GanttView() {
-  const projects = useProjects({ page_size: 100 })
-  const proyectos = projects.data?.results ?? []
-
-  return (
-    <div className="overflow-x-auto rounded-xl border border-outline-variant bg-white p-lg">
-      <div
-        className="grid min-w-[640px] items-center gap-y-sm"
-        style={{ gridTemplateColumns: '180px repeat(5, 1fr)' }}
-      >
-        <span />
-        {ETAPAS.map((etapa) => (
-          <span
-            key={etapa}
-            className="pb-sm text-center text-[10px] font-bold uppercase tracking-wider text-outline"
-          >
-            {ETAPA_LABELS[etapa]}
-          </span>
-        ))}
-        {proyectos.map((proyecto) => {
-          const idx = ETAPAS.indexOf(proyecto.etapa)
-          return (
-            <div key={proyecto.id} className="contents">
-              <div className="min-w-0 pr-md">
-                <p className="truncate text-label-sm font-bold text-on-surface">
-                  {proyecto.estudiante_nombre}
-                </p>
-                <p className="truncate text-[10px] text-outline">
-                  {proyecto.titulo}
-                </p>
-              </div>
-              <div
-                className="col-span-5 grid h-5 overflow-hidden rounded-full bg-surface-container"
-                style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}
-              >
-                <div
-                  className="rounded-full bg-gradient-to-r from-primary to-primary-container"
-                  style={{ gridColumn: `1 / ${idx + 2}` }}
-                />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-      {proyectos.length === 0 && (
-        <p className="py-lg text-center text-body-sm text-outline">
-          No hay proyectos para mostrar.
-        </p>
-      )}
-    </div>
-  )
-}
-
-function NuevoEventoModal({
-  open,
-  onClose,
-  evento,
-}: {
-  open: boolean
-  onClose: () => void
-  evento?: EventoCronograma
-}) {
-  const isEditing = !!evento
-  const [descripcion, setDescripcion] = useState(evento?.descripcion ?? '')
-  const [tipo, setTipo] = useState<'ENTREGA' | 'REVISION' | 'DEFENSA' | 'ADMINISTRATIVO'>(
-    (evento?.tipo as 'ENTREGA' | 'REVISION' | 'DEFENSA' | 'ADMINISTRATIVO') ?? 'ENTREGA'
-  )
-  const [publico, setPublico] = useState<'TODOS' | 'ESTUDIANTES' | 'DOCENTES'>(
-    (evento?.publico_objetivo as 'TODOS' | 'ESTUDIANTES' | 'DOCENTES') ?? 'TODOS'
-  )
-  const [fechaInicio, setFechaInicio] = useState(evento?.fecha_inicio ?? '')
-  const [fechaFin, setFechaFin] = useState(evento?.fecha_fin ?? '')
-  const create = useCreateEvento()
-  const update = useUpdateEvento()
-
-  useEffect(() => {
-    setDescripcion(evento?.descripcion ?? '')
-    setTipo(evento?.tipo ?? 'ENTREGA')
-    setPublico(evento?.publico_objetivo ?? 'TODOS')
-    setFechaInicio(evento?.fecha_inicio ?? '')
-    setFechaFin(evento?.fecha_fin ?? '')
-  }, [evento])
-
-  const inputClass =
-    'h-[44px] w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-md text-body-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary-container'
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="rounded-xl border-outline-variant sm:max-w-[28rem]">
-        <DialogHeader>
-          <DialogTitle className="text-headline-md text-primary">
-            {isEditing ? 'Editar evento' : 'Nuevo evento del cronograma'}
-          </DialogTitle>
-          <DialogDescription className="text-body-sm text-on-surface-variant">
-            El evento será visible para el público objetivo seleccionado.
-          </DialogDescription>
-        </DialogHeader>
-        <form
-          className="space-y-md"
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (!descripcion.trim() || !fechaInicio) return
-            const payload = {
-              descripcion: descripcion.trim(),
-              tipo,
-              publico_objetivo: publico,
-              fecha_inicio: fechaInicio,
-              fecha_fin: fechaFin || fechaInicio,
-              semestre: 1,
-            }
-            if (isEditing && evento) {
-              update.mutate({ id: evento.id, ...payload }, { onSuccess: onClose })
-            } else {
-              create.mutate(payload, {
-                onSuccess: () => {
-                  setDescripcion('')
-                  setFechaInicio('')
-                  setFechaFin('')
-                  onClose()
-                },
-              })
-            }
-          }}
-        >
-          <div className="flex flex-col gap-xs">
-            <label className="text-label-md text-on-surface-variant" htmlFor="e-desc">
-              Descripción
-            </label>
-            <input
-              id="e-desc"
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Ej. Entrega Propuesta Tesis"
-              className={inputClass}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-md">
-            <div className="flex flex-col gap-xs">
-              <label className="text-label-md text-on-surface-variant" htmlFor="e-tipo">
-                Tipo
-              </label>
-              <select
-                id="e-tipo"
-                value={tipo}
-                onChange={(e) => setTipo(e.target.value as 'ENTREGA' | 'REVISION' | 'DEFENSA' | 'ADMINISTRATIVO')}
-                className={inputClass}
-              >
-                <option value="ENTREGA">Entrega</option>
-                <option value="REVISION">Revisión</option>
-                <option value="DEFENSA">Defensa</option>
-                <option value="ADMINISTRATIVO">Administrativo</option>
-              </select>
-            </div>
-            <div className="flex flex-col gap-xs">
-              <label className="text-label-md text-on-surface-variant" htmlFor="e-pub">
-                Público
-              </label>
-              <select
-                id="e-pub"
-                value={publico}
-                onChange={(e) => setPublico(e.target.value as 'TODOS' | 'ESTUDIANTES' | 'DOCENTES')}
-                className={inputClass}
-              >
-                <option value="TODOS">Todos</option>
-                <option value="ESTUDIANTES">Estudiantes</option>
-                <option value="DOCENTES">Docentes</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-md">
-            <div className="flex flex-col gap-xs">
-              <label className="text-label-md text-on-surface-variant" htmlFor="e-inicio">
-                Fecha inicio
-              </label>
-              <input
-                id="e-inicio"
-                type="date"
-                value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-            <div className="flex flex-col gap-xs">
-              <label className="text-label-md text-on-surface-variant" htmlFor="e-fin">
-                Fecha fin (opcional)
-              </label>
-              <input
-                id="e-fin"
-                type="date"
-                value={fechaFin}
-                onChange={(e) => setFechaFin(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-          </div>
-          {(create.isError || update.isError) && (
-            <p className="rounded-lg bg-error-container p-sm text-body-sm text-on-error-container">
-              No se pudo guardar el evento.
-            </p>
-          )}
-          <div className="flex justify-end gap-sm">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl px-lg py-sm text-label-md text-secondary"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={(create.isPending || update.isPending) || !descripcion.trim() || !fechaInicio}
-              className="rounded-xl bg-primary-container px-lg py-sm text-label-md font-bold text-on-primary transition-all hover:brightness-110 disabled:opacity-50"
-            >
-              {(create.isPending || update.isPending) ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Crear evento'}
-            </button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
   )
 }

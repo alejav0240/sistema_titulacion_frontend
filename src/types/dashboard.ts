@@ -3,12 +3,17 @@ import type { Proyecto, Version } from './project'
 
 export interface EventoCronograma {
   id: number
-  publico_objetivo: 'ESTUDIANTES' | 'DOCENTES' | 'TODOS'
-  tipo: 'ENTREGA' | 'REVISION' | 'DEFENSA' | 'ADMINISTRATIVO'
+  /** Subset de ESTUDIANTES|DOCENTES|TUTORES|TRIBUNALES; vacío = todos */
+  publicos: string[]
+  tipo: string
   fecha_inicio: string
   fecha_fin: string
   descripcion: string
   semestre: number
+  /** IDs de grupos objetivo; vacío = todos los grupos */
+  grupos: number[]
+  grupos_nombres: string[]
+  creado_por_id: number | null
   created_at: string
 }
 
@@ -20,6 +25,7 @@ export interface StudentDashboard {
   versiones: Version[]
   observaciones: Anotacion[]
   proximos_eventos: EventoCronograma[]
+  actividad: ActividadItem[]
 }
 
 export interface PendienteMateria {
