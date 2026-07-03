@@ -55,7 +55,7 @@ const createColumns = (
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-sm font-medium text-gray-900 group-hover:text-primary dark:text-white">{user.nombre}</p>
+            <p className="text-sm font-medium text-gray-900 group-hover:text-primary dark:text-[#fff]">{user.nombre}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
           </div>
         </Link>

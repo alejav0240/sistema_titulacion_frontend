@@ -7,12 +7,11 @@ import { RoleBadge } from '#/components/admin/ui/RoleBadge'
 import { StatusBadge } from '#/components/projects/StatusBadge'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import { initials } from '#/components/layout/Topbar'
-import { useUser, useUpdateUser, useUsers } from '#/hooks/useUsers'
-import { useRelaciones, useCreateRelacion, useDeleteRelacion } from '#/hooks/useRelaciones'
+import { useUser, useUpdateUser } from '#/hooks/useUsers'
+import { useRelaciones } from '#/hooks/useRelaciones'
 import api from '#/lib/api'
 import { formatDate } from '#/lib/datetime'
 import type { Proyecto, ProyectosResponse } from '#/types/project'
-import type { Usuario } from '#/types/user'
 
 export const Route = createFileRoute('/_shell/admin/usuarios_/$usuarioId')({
   component: RouteComponent,
@@ -35,7 +34,6 @@ function UserProfilePage() {
   const esEstudiante = user.data?.rol === 'ESTUDIANTE'
 
   const relaciones = useRelaciones({ docente: esEstudiante ? undefined : id })
-  const relacionesEstudiante = useRelaciones({ estudiante: esEstudiante ? id : undefined })
 
   const proyectos = useQuery({
     queryKey: ['projects', { perfil: id }],
@@ -150,13 +148,10 @@ function UserProfilePage() {
         />
       )}
 
-      {/* Contenido según rol */}
+      {/* Contenido según rol — la asignación de tutores/tribunales
+          se hace ahora desde el detalle de cada proyecto */}
       {esEstudiante ? (
         <div className="space-y-lg">
-          <AsignacionesPanel
-            estudianteId={id}
-            relaciones={relacionesEstudiante.data ?? []}
-          />
           <section className="rounded-xl border border-outline-variant bg-white p-lg">
             <h3 className="mb-md text-label-md font-bold text-on-surface">
               Proyectos del estudiante
@@ -239,145 +234,6 @@ function UserProfilePage() {
         </section>
       )}
     </div>
-  )
-}
-
-function AsignacionesPanel({
-  estudianteId,
-  relaciones,
-}: {
-  estudianteId: number
-  relaciones: import('#/hooks/useRelaciones').Relacion[]
-}) {
-  const createRel = useCreateRelacion()
-  const deleteRel = useDeleteRelacion()
-  const [search, setSearch] = useState('')
-  const [tipo, setTipo] = useState<'TUTOR' | 'TRIBUNAL'>('TUTOR')
-
-  const docentes = useUsers(1, { rol: 'DOCENTE', search: search || undefined })
-
-  const tutor = relaciones.find((r) => r.relacion === 'TUTOR' && r.is_active)
-  const tribunales = relaciones.filter((r) => r.relacion === 'TRIBUNAL' && r.is_active)
-
-  const assign = (docente: Usuario) => {
-    createRel.mutate(
-      { estudiante: estudianteId, docente: docente.id, relacion: tipo },
-      {
-        onSuccess: () => { setSearch('') },
-        onError: (e: unknown) => {
-          const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-          toast.error(msg ?? 'Error al asignar.')
-        },
-      },
-    )
-  }
-
-  const remove = (id: number) => {
-    if (!window.confirm('¿Quitar esta asignación?')) return
-    deleteRel.mutate(id)
-  }
-
-  const candidatos = (docentes.data?.results ?? []).filter(
-    (u) => u.rol === 'DOCENTE' && u.is_active,
-  )
-
-  return (
-    <section className="rounded-xl border border-outline-variant bg-white p-lg">
-      <h3 className="mb-md text-label-md font-bold text-on-surface">
-        Tutor y Tribunal
-      </h3>
-
-      <div className="mb-md grid grid-cols-1 gap-sm md:grid-cols-2">
-        {/* Tutor actual */}
-        <div className="rounded-lg bg-surface-container-low p-md">
-          <p className="mb-xs text-label-sm font-bold text-outline uppercase tracking-wider">Tutor</p>
-          {tutor ? (
-            <div className="flex items-center justify-between">
-              <p className="text-label-md text-on-surface">{tutor.docente_nombre}</p>
-              <button
-                type="button"
-                onClick={() => remove(tutor.id)}
-                className="rounded p-xs text-error hover:bg-error-container"
-              >
-                <MaterialIcon name="close" size={16} />
-              </button>
-            </div>
-          ) : (
-            <p className="text-label-sm text-outline">Sin tutor asignado</p>
-          )}
-        </div>
-
-        {/* Tribunales actuales */}
-        <div className="rounded-lg bg-surface-container-low p-md">
-          <p className="mb-xs text-label-sm font-bold text-outline uppercase tracking-wider">Tribunal</p>
-          {tribunales.length === 0 && (
-            <p className="text-label-sm text-outline">Sin tribunal asignado</p>
-          )}
-          <div className="space-y-xs">
-            {tribunales.map((t) => (
-              <div key={t.id} className="flex items-center justify-between">
-                <p className="text-label-md text-on-surface">{t.docente_nombre}</p>
-                <button
-                  type="button"
-                  onClick={() => remove(t.id)}
-                  className="rounded p-xs text-error hover:bg-error-container"
-                >
-                  <MaterialIcon name="close" size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Formulario de asignación */}
-      <div className="border-t border-outline-variant pt-md">
-        <p className="mb-sm text-label-sm font-bold text-on-surface-variant">Asignar docente</p>
-        <div className="flex flex-wrap gap-sm">
-          <select
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value as 'TUTOR' | 'TRIBUNAL')}
-            className="rounded-lg border border-outline-variant bg-white px-sm py-xs text-label-md text-on-surface outline-none focus:border-primary"
-          >
-            <option value="TUTOR">Como Tutor</option>
-            <option value="TRIBUNAL">Como Tribunal</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Buscar docente por nombre..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 rounded-lg border border-outline-variant bg-white px-sm py-xs text-label-md text-on-surface outline-none focus:border-primary min-w-[200px]"
-          />
-        </div>
-
-        {search && (
-          <div className="mt-sm max-h-48 overflow-y-auto rounded-lg border border-outline-variant bg-white shadow-sm">
-            {candidatos.length === 0 && (
-              <p className="px-md py-sm text-label-sm text-outline">Sin resultados.</p>
-            )}
-            {candidatos.map((u) => (
-              <button
-                key={u.id}
-                type="button"
-                onClick={() => assign(u)}
-                disabled={createRel.isPending}
-                className="flex w-full items-center justify-between px-md py-sm text-left text-label-md text-on-surface hover:bg-surface-container-low disabled:opacity-50"
-              >
-                <span>{u.nombre}</span>
-                <span className="text-label-sm text-outline">
-                  {u.cupos_tutor > 0 && tipo === 'TUTOR'
-                    ? `${u.tutorados_activos}/${u.cupos_tutor} tutorías`
-                    : u.cupos_tribunal > 0 && tipo === 'TRIBUNAL'
-                      ? `${u.tribunales_activos}/${u.cupos_tribunal} tribunales`
-                      : u.rol}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </section>
   )
 }
 

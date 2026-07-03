@@ -28,7 +28,11 @@ function UsuariosPage() {
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<Usuario | null>(null)
 
-  const { data, isLoading } = useUsers(page, filters)
+  // Sección "Docentes": por defecto se excluyen los estudiantes
+  const { data, isLoading } = useUsers(page, {
+    ...filters,
+    exclude_rol: filters.rol ? undefined : 'ESTUDIANTE',
+  })
   const deactivateMutation = useDeactivateUser()
   const activateMutation = useActivateUser()
   const currentUser = useStore(authStore, (s) => s.user)
@@ -67,11 +71,11 @@ function UsuariosPage() {
       <main>
         <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-semibold text-gray-900 dark:text-white">
-              Gestion de Usuarios
+            <h2 className="text-3xl font-semibold text-gray-900 dark:text-[#fff]">
+              Docentes
             </h2>
             <p className="text-base text-gray-500 dark:text-gray-400 mt-1">
-              Administra el acceso, roles y asignaciones del personal academico.
+              Administra el acceso, roles y cupos del personal academico.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -101,7 +105,7 @@ function UsuariosPage() {
                 </Button>
                 <Button
                   onClick={() => setModalOpen(true)}
-                  className="bg-red-900 text-white hover:bg-red-800 px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 shadow-md"
+                  className="bg-red-900 text-[#fff] hover:bg-red-800 px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 shadow-md"
                 >
                   <Plus className="w-4 h-4" />
                   Agregar usuario

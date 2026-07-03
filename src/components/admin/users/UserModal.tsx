@@ -59,7 +59,7 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
     defaultValues: {
       nombre: '',
       email: '',
-      rol: 'ESTUDIANTE',
+      rol: 'DOCENTE',
       subroles: [],
       sendEmail: true,
     } as UserFormData,
@@ -92,7 +92,7 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
         if (creado.generated_password) {
           // La contraseña solo viaja una vez: mostrarla antes de cerrar.
           setGeneratedPassword(creado.generated_password)
-          setSelectedRol('ESTUDIANTE')
+          setSelectedRol('DOCENTE')
           setCapacidades([])
           form.reset()
           return
@@ -100,13 +100,13 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
         toast.success('Usuario creado correctamente.')
       }
       onOpenChange(false)
-      setSelectedRol('ESTUDIANTE')
+      setSelectedRol('DOCENTE')
       setCapacidades([])
       form.reset()
     },
   })
 
-  const [selectedRol, setSelectedRol] = useState<Rol>('ESTUDIANTE')
+  const [selectedRol, setSelectedRol] = useState<Rol>('DOCENTE')
   const [capacidades, setCapacidades] = useState<string[]>([])
   const [cuposTutor, setCuposTutor] = useState(0)
   const [cuposTribunal, setCuposTribunal] = useState(0)
@@ -128,7 +128,7 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
       setCuposTribunal(user.cupos_tribunal ?? 0)
     } else {
       form.reset()
-      setSelectedRol('ESTUDIANTE')
+      setSelectedRol('DOCENTE')
       setCapacidades([])
       setCuposTutor(0)
       setCuposTribunal(0)
@@ -220,7 +220,7 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="Ej. Carlos Javier Perez"
-                    className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                    className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-[#fff] placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   />
                   {field.state.meta.errors?.length > 0 && (
                     <span className="text-xs text-red-600 dark:text-red-400">
@@ -247,7 +247,7 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="cperez@university.edu"
-                    className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                    className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-[#fff] placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   />
                   {field.state.meta.errors?.length > 0 && (
                     <span className="text-xs text-red-600 dark:text-red-400">
@@ -260,36 +260,39 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
           </div>
 
           <div className="space-y-4">
-            <form.Field
-              name="rol"
-              children={(field) => (
-                <div className="flex flex-col gap-1.5">
-                  <Label
-                    htmlFor={field.name}
-                    className="text-gray-700 dark:text-gray-300"
-                  >
-                    Rol Principal
-                  </Label>
-                  <Select
-                    value={field.state.value}
-                    onValueChange={(value) => {
-                      field.handleChange(value as Rol)
-                      setSelectedRol(value as Rol)
-                    }}
-                  >
-                    <SelectTrigger className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white">
-                      <SelectValue placeholder="Seleccionar rol" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ESTUDIANTE">Estudiante</SelectItem>
-                      <SelectItem value="DOCENTE">Docente</SelectItem>
-                      <SelectItem value="DIRECTOR">Director</SelectItem>
-                      <SelectItem value="DTC">DTC</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            />
+            {/* En creación todo usuario nuevo es DOCENTE por defecto; el rol solo
+                se puede cambiar editando un usuario ya existente. */}
+            {isEditing && (
+              <form.Field
+                name="rol"
+                children={(field) => (
+                  <div className="flex flex-col gap-1.5">
+                    <Label
+                      htmlFor={field.name}
+                      className="text-gray-700 dark:text-gray-300"
+                    >
+                      Rol Principal
+                    </Label>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(value) => {
+                        field.handleChange(value as Rol)
+                        setSelectedRol(value as Rol)
+                      }}
+                    >
+                      <SelectTrigger className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-[#fff]">
+                        <SelectValue placeholder="Seleccionar rol" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="DOCENTE">Docente</SelectItem>
+                        <SelectItem value="DIRECTOR">Director</SelectItem>
+                        <SelectItem value="DTC">DTC</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              />
+            )}
 
             {selectedRol !== 'ESTUDIANTE' && (
               <div className="flex flex-col gap-1.5">

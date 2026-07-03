@@ -85,13 +85,21 @@ export function useResetPassword() {
 
 export function useUsers(
   page = 1,
-  filters?: { rol?: string; estado?: string; search?: string },
+  filters?: {
+    rol?: string
+    roles?: string
+    exclude_rol?: string
+    estado?: string
+    search?: string
+  },
 ) {
   return useQuery({
     queryKey: ['users', page, filters],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page) })
       if (filters?.rol) params.set('rol', filters.rol)
+      if (filters?.roles) params.set('roles', filters.roles)
+      if (filters?.exclude_rol) params.set('exclude_rol', filters.exclude_rol)
       if (filters?.estado) params.set('estado', filters.estado)
       if (filters?.search) params.set('search', filters.search)
       const { data } = await api.get<UsersResponse>(`/api/users/?${params}`)

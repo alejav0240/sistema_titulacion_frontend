@@ -26,7 +26,6 @@ export function UserFilters({
           <SelectItem value="DOCENTE">Docente</SelectItem>
           <SelectItem value="TUTOR">Tutor</SelectItem>
           <SelectItem value="TRIBUNAL">Tribunal</SelectItem>
-          <SelectItem value="ESTUDIANTE">Estudiante</SelectItem>
           <SelectItem value="DIRECTOR">Director</SelectItem>
           <SelectItem value="DTC">DTC</SelectItem>
         </SelectContent>
