@@ -102,11 +102,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className="light" suppressHydrationWarning>
       <head>
-        {/* Aplica el tema guardado antes de hidratar para evitar flash */}
+        {/* Aplica el tema antes de hidratar para evitar flash: usa lo guardado
+            por el usuario, o si nunca eligió, la preferencia del sistema. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark');document.documentElement.classList.remove('light')}}catch(e){}",
+              "try{var t=localStorage.getItem('theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d){document.documentElement.classList.add('dark');document.documentElement.classList.remove('light')}}catch(e){}",
           }}
         />
         <HeadContent />

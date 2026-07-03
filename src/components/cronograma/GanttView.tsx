@@ -1,6 +1,28 @@
 import { Chart } from 'react-google-charts'
+import { useTheme } from '#/hooks/useTheme'
 import { publicosLabel, gruposLabel, tipoStyle } from './shared'
 import type { EventoCronograma } from '#/types/dashboard'
+
+/** Google Charts no lee variables CSS: los colores del tema hay que
+ * pasarlos como opciones JS, calcados de los tokens M3 de styles.css. */
+const GANTT_THEME = {
+  light: {
+    backgroundColor: '#ffffff',
+    textColor: '#1a1c1c',
+    gridColor: '#e2e2e2',
+    trackFill: '#ffffff',
+    trackFillAlt: '#f3f3f3',
+    arrowColor: '#877274',
+  },
+  dark: {
+    backgroundColor: '#1b1b1c',
+    textColor: '#e4e2e2',
+    gridColor: '#3f3a3b',
+    trackFill: '#1f1f20',
+    trackFillAlt: '#2a2a2b',
+    arrowColor: '#a08a8c',
+  },
+} as const
 
 const COLUMNS = [
   { type: 'string', label: 'ID' },
@@ -17,6 +39,9 @@ const ROW_HEIGHT = 42
 
 /** Gantt con react-google-charts (tipo "Gantt" nativo). */
 export function GanttView({ eventos }: { eventos: EventoCronograma[] }) {
+  const { theme } = useTheme()
+  const colors = GANTT_THEME[theme]
+
   if (eventos.length === 0) {
     return (
       <div className="rounded-xl border border-outline-variant bg-white p-lg">
@@ -47,17 +72,27 @@ export function GanttView({ eventos }: { eventos: EventoCronograma[] }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-outline-variant bg-white p-lg">
       <Chart
+        key={theme}
         chartType="Gantt"
-        chartPackages={['gantt']}
+        chartPackages={['corechart', 'controls', 'gantt']}
         width="100%"
         height={`${height}px`}
         columns={[...COLUMNS]}
         rows={rows}
         options={{
+          backgroundColor: colors.backgroundColor,
           gantt: {
             trackHeight: ROW_HEIGHT,
             criticalPathEnabled: false,
-            labelStyle: { fontName: 'Inter', fontSize: 12 },
+            labelStyle: {
+              fontName: 'Inter',
+              fontSize: 12,
+              color: colors.textColor,
+            },
+            innerGridHorizLine: { stroke: colors.gridColor, strokeWidth: 1 },
+            innerGridTrack: { fill: colors.trackFill },
+            innerGridDarkTrack: { fill: colors.trackFillAlt },
+            arrow: { color: colors.arrowColor },
           },
         }}
         legendToggle={false}
