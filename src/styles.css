@@ -142,6 +142,75 @@
   --radius-xl: 0.75rem;
 }
 
+/* ===== Modo oscuro: se redefinen los tokens M3 bajo .dark =====
+   bg-white / text-gray-* también usan var(--color-*), así el
+   cambio cubre toda la app sin tocar cada componente. */
+.dark {
+  --color-primary: #ffb2bc;
+  --color-primary-container: #7c2a3b;
+  --color-on-primary-container: #ffd9dd;
+  --color-primary-fixed: #3a0a18;
+
+  --color-secondary: #adc8f5;
+  --color-on-secondary: #12294a;
+  --color-secondary-container: #2d486d;
+  --color-on-secondary-container: #d5e3ff;
+
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+
+  --color-background: #131314;
+  --color-on-background: #e4e2e2;
+  --color-surface: #131314;
+  --color-on-surface: #e4e2e2;
+  --color-surface-variant: #2b2b2c;
+  --color-on-surface-variant: #cbb6b8;
+  --color-surface-dim: #131314;
+  --color-surface-bright: #39393a;
+  --color-surface-container-lowest: #0e0e0f;
+  --color-surface-container-low: #1b1b1c;
+  --color-surface-container: #1f1f20;
+  --color-surface-container-high: #2a2a2b;
+  --color-surface-container-highest: #353536;
+
+  --color-outline: #a08a8c;
+  --color-outline-variant: #3f3a3b;
+  --color-inverse-surface: #e4e2e2;
+  --color-inverse-on-surface: #2f3131;
+
+  /* Utilidades planas usadas en el código (bg-white, text-gray-*, zinc) */
+  --color-white: #1b1b1c;
+  --color-gray-50: #1f1f20;
+  --color-gray-100: #2a2a2b;
+  --color-gray-200: #353536;
+  --color-gray-300: #4a4a4b;
+  --color-gray-400: #a08a8c;
+  --color-gray-500: #b8b8b9;
+  --color-gray-600: #cfcfcf;
+  --color-gray-700: #dedede;
+  --color-gray-800: #e8e8e8;
+  --color-gray-900: #f3f3f3;
+  --color-yellow-50: #2b2410;
+  --color-yellow-100: #3a3012;
+  --color-blue-50: #16202e;
+  --color-green-100: #123020;
+
+  /* shadcn compat */
+  --color-foreground: #e4e2e2;
+  --color-card: #1b1b1c;
+  --color-card-foreground: #e4e2e2;
+  --color-popover: #1f1f20;
+  --color-popover-foreground: #e4e2e2;
+  --color-muted: #2a2a2b;
+  --color-muted-foreground: #cbb6b8;
+  --color-accent: #2a2a2b;
+  --color-accent-foreground: #e4e2e2;
+  --color-border: #3f3a3b;
+  --color-input: #3f3a3b;
+}
+
 body {
   @apply m-0 bg-background text-on-surface;
   font-family: var(--font-sans);

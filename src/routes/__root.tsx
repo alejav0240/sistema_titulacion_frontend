@@ -50,7 +50,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function NotFoundPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-md bg-[#FAFAFA] p-xl text-center text-on-surface">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-md bg-background p-xl text-center text-on-surface">
       <MaterialIcon name="travel_explore" size={64} className="text-primary" />
       <h1 className="text-display-lg font-bold text-primary">404</h1>
       <p className="max-w-[28rem] text-body-lg text-on-surface-variant">
@@ -69,7 +69,7 @@ function NotFoundPage() {
 
 function ErrorPage({ error }: { error: Error }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-md bg-[#FAFAFA] p-xl text-center text-on-surface">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-md bg-background p-xl text-center text-on-surface">
       <MaterialIcon name="error" size={64} className="text-error" />
       <h1 className="text-headline-lg font-bold text-primary">
         Algo salió mal
@@ -102,6 +102,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className="light" suppressHydrationWarning>
       <head>
+        {/* Aplica el tema guardado antes de hidratar para evitar flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark');document.documentElement.classList.remove('light')}}catch(e){}",
+          }}
+        />
         <HeadContent />
       </head>
       <body
