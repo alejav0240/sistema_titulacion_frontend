@@ -3,7 +3,9 @@ import { useRef, useState } from 'react'
 import { AuthGuard } from '#/components/auth/AuthGuard'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import { initials } from '#/components/layout/Topbar'
+import { ConfirmDialog } from '#/components/ui/ConfirmDialog'
 import {
+  useBulkUnenroll,
   useEnrollCsv,
   useEnrollStudent,
   useMateria,
@@ -42,6 +44,50 @@ function MateriaDetailPage() {
   })
   const fileRef = useRef<HTMLInputElement>(null)
   const [csvResult, setCsvResult] = useState<string | null>(null)
+  const [csvPreview, setCsvPreview] = useState<Array<{ email: string; nombre: string }> | null>(null)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [seleccionados, setSeleccionados] = useState<Set<number>>(new Set())
+  const [confirmBulkOpen, setConfirmBulkOpen] = useState(false)
+  const bulkUnenroll = useBulkUnenroll()
+
+  const toggleSeleccion = (inscripcionId: number) => {
+    setSeleccionados((prev) => {
+      const next = new Set(prev)
+      if (next.has(inscripcionId)) next.delete(inscripcionId)
+      else next.add(inscripcionId)
+      return next
+    })
+  }
+
+  const parseCSV = (text: string) => {
+    const lines = text.trim().split('\n')
+    const hasHeader = lines[0].toLowerCase().includes('email')
+    return (hasHeader ? lines.slice(1) : lines)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => { const [email = '', nombre = ''] = l.split(',').map((s) => s.trim()); return { email, nombre } })
+      .filter((r) => r.email)
+  }
+
+  const confirmarCSV = () => {
+    if (!pendingFile) return
+    enrollCsv.mutate(
+      { materiaId: id, file: pendingFile },
+      {
+        onSuccess: (result) => {
+          const r = result as { inscritos: string[]; creados: string[]; errors: Array<unknown> }
+          const partes = []
+          if (r.creados?.length) partes.push(`${r.creados.length} creados`)
+          const soloInscritos = r.inscritos.length - (r.creados?.length ?? 0)
+          if (soloInscritos > 0) partes.push(`${soloInscritos} ya existían e inscritos`)
+          if (r.errors.length) partes.push(`${r.errors.length} errores`)
+          setCsvResult(partes.join(', ') + '.')
+          setCsvPreview(null)
+          setPendingFile(null)
+        },
+      },
+    )
+  }
 
   const data = materia.data
   const inscritosIds = new Set(
@@ -109,11 +155,11 @@ function MateriaDetailPage() {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              disabled={enrollCsv.isPending}
+              disabled={enrollCsv.isPending || !!csvPreview}
               className="flex items-center gap-xs rounded-lg border border-outline-variant px-md py-sm text-label-md text-on-surface-variant transition-colors hover:text-primary disabled:opacity-50"
             >
               <MaterialIcon name="upload_file" size={16} />
-              {enrollCsv.isPending ? 'Importando…' : 'Importar CSV'}
+              Importar CSV
             </button>
             <input
               ref={fileRef}
@@ -122,26 +168,55 @@ function MateriaDetailPage() {
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0]
-                if (file) {
-                  enrollCsv.mutate(
-                    { materiaId: id, file },
-                    {
-                      onSuccess: (result) => {
-                        const r = result as {
-                          inscritos: string[]
-                          errors: Array<unknown>
-                        }
-                        setCsvResult(
-                          `${r.inscritos.length} inscritos, ${r.errors.length} errores.`,
-                        )
-                      },
-                    },
-                  )
+                if (!file) return
+                const reader = new FileReader()
+                reader.onload = (ev) => {
+                  const text = ev.target?.result as string
+                  setCsvPreview(parseCSV(text))
+                  setPendingFile(file)
+                  setCsvResult(null)
                 }
+                reader.readAsText(file)
                 e.target.value = ''
               }}
             />
           </div>
+
+          {csvPreview && (
+            <div className="mb-md rounded-xl border border-outline-variant bg-surface-container-lowest p-sm">
+              <p className="mb-xs text-[10px] font-bold uppercase tracking-wider text-outline">
+                Preview — {csvPreview.length} registro{csvPreview.length !== 1 ? 's' : ''}
+              </p>
+              <div className="max-h-[200px] overflow-y-auto divide-y divide-outline-variant/40">
+                {csvPreview.map((row, i) => (
+                  <div key={i} className="flex items-center gap-sm py-xs">
+                    <span className="w-5 text-center text-[10px] text-outline">{i + 1}</span>
+                    <div>
+                      <p className="text-label-sm text-on-surface">{row.email}</p>
+                      {row.nombre && <p className="text-[10px] text-outline">{row.nombre}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-sm flex justify-end gap-sm">
+                <button
+                  type="button"
+                  onClick={() => { setCsvPreview(null); setPendingFile(null) }}
+                  className="px-md py-xs text-label-sm text-secondary"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmarCSV}
+                  disabled={enrollCsv.isPending}
+                  className="rounded-lg bg-primary px-md py-xs text-label-sm font-bold text-[#fff] disabled:opacity-50"
+                >
+                  {enrollCsv.isPending ? 'Importando…' : 'Confirmar importación'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {csvResult && (
             <p className="mb-sm rounded-lg bg-secondary-container/40 p-sm text-label-sm text-on-secondary-container">
@@ -149,43 +224,69 @@ function MateriaDetailPage() {
             </p>
           )}
 
-          <div className="divide-y divide-outline-variant/50">
-            {(inscripciones.data ?? []).map((inscripcion) => (
-              <div
-                key={inscripcion.id}
-                className="flex items-center justify-between py-sm"
-              >
+          {(() => {
+            const inscritos = inscripciones.data ?? []
+            if (inscritos.length === 0) {
+              return (
+                <p className="py-lg text-center text-body-sm text-outline">
+                  Aún no hay estudiantes inscritos.
+                </p>
+              )
+            }
+            const row = (inscripcion: typeof inscritos[0]) => (
+              <div key={inscripcion.id} className="flex items-center justify-between py-sm">
                 <div className="flex items-center gap-sm">
+                  <input
+                    type="checkbox"
+                    checked={seleccionados.has(inscripcion.id)}
+                    onChange={() => toggleSeleccion(inscripcion.id)}
+                    className="h-4 w-4 rounded border-outline-variant accent-[#6b1d2f]"
+                  />
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary-container text-[10px] font-bold text-on-secondary-container">
                     {initials(inscripcion.estudiante_nombre)}
                   </span>
                   <div>
-                    <p className="text-label-md text-on-surface">
-                      {inscripcion.estudiante_nombre}
-                    </p>
-                    <p className="text-label-sm text-outline">
-                      {inscripcion.estudiante_email}
-                    </p>
+                    <p className="text-label-md text-on-surface">{inscripcion.estudiante_nombre}</p>
+                    <p className="text-label-sm text-outline">{inscripcion.estudiante_email}</p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() =>
-                    unenroll.mutate({ materiaId: id, inscripcionId: inscripcion.id })
-                  }
+                  onClick={() => unenroll.mutate({ materiaId: id, inscripcionId: inscripcion.id })}
                   title="Quitar de la materia"
                   className="rounded-lg p-xs text-outline transition-colors hover:text-error"
                 >
                   <MaterialIcon name="person_remove" size={18} />
                 </button>
               </div>
-            ))}
-            {(inscripciones.data ?? []).length === 0 && (
-              <p className="py-lg text-center text-body-sm text-outline">
-                Aún no hay estudiantes inscritos.
-              </p>
-            )}
-          </div>
+            )
+            return (
+              <>
+                {seleccionados.size > 0 && (
+                  <div className="mb-sm flex items-center justify-between rounded-lg bg-error-container/60 p-sm">
+                    <span className="text-label-sm font-bold text-on-error-container">
+                      {seleccionados.size} seleccionado{seleccionados.size !== 1 ? 's' : ''}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmBulkOpen(true)}
+                      className="rounded bg-error px-sm py-1 text-[10px] font-bold uppercase text-on-error hover:brightness-110"
+                    >
+                      Quitar seleccionados
+                    </button>
+                  </div>
+                )}
+                <div className="divide-y divide-outline-variant/50">
+                  {inscritos.slice(0, 5).map(row)}
+                </div>
+                {inscritos.length > 5 && (
+                  <div className="thin-scrollbar mt-xs max-h-[260px] overflow-y-auto divide-y divide-outline-variant/40 border-t border-outline-variant/50">
+                    {inscritos.slice(5).map(row)}
+                  </div>
+                )}
+              </>
+            )
+          })()}
         </div>
 
         {/* Inscribir estudiante */}
@@ -238,6 +339,27 @@ function MateriaDetailPage() {
           </div>
         </div>
       </section>
+
+      <ConfirmDialog
+        open={confirmBulkOpen}
+        title="Quitar estudiantes"
+        description={`¿Quitar a ${seleccionados.size} estudiante${seleccionados.size !== 1 ? 's' : ''} de esta materia?`}
+        confirmLabel="Quitar"
+        destructive
+        pending={bulkUnenroll.isPending}
+        onConfirm={() =>
+          bulkUnenroll.mutate(
+            { materiaId: id, inscripcionIds: [...seleccionados] },
+            {
+              onSuccess: () => {
+                setSeleccionados(new Set())
+                setConfirmBulkOpen(false)
+              },
+            },
+          )
+        }
+        onCancel={() => setConfirmBulkOpen(false)}
+      />
     </div>
   )
 }

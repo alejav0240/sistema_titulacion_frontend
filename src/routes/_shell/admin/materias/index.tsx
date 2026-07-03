@@ -1,11 +1,16 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useStore } from '@tanstack/react-store'
+import { toast } from 'sonner'
 import { z } from 'zod'
 import { AuthGuard } from '#/components/auth/AuthGuard'
 import { MateriaModal } from '#/components/materias/MateriaModal'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
+import { CsvImportModal } from '#/components/ui/CsvImportModal'
 import { initials } from '#/components/layout/Topbar'
-import { useMaterias } from '#/hooks/useMaterias'
+import { authStore } from '#/hooks/useAuthStore'
+import { useDebouncedValue } from '#/hooks/useDebouncedValue'
+import { useImportMaterias, useMaterias } from '#/hooks/useMaterias'
 import { cn } from '#/lib/utils'
 import type { Materia } from '#/types/materia'
 
@@ -29,9 +34,15 @@ function MateriasPage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [editing, setEditing] = useState<Materia | null>(null)
 
-  const materias = useMaterias({ search: search || undefined })
+  const debouncedSearch = useDebouncedValue(search.trim(), 300)
+  const materias = useMaterias({ search: debouncedSearch || undefined })
+  const importMaterias = useImportMaterias()
+  const user = useStore(authStore, (s) => s.user)
+  // Solo el Director puede crear/editar materias; DTC es solo lectura
+  const canWrite = user?.rol === 'DIRECTOR'
 
   const setView = (v: 'cards' | 'table') =>
     navigate({ to: '/admin/materias', search: { view: v }, replace: true })
@@ -64,6 +75,16 @@ function MateriasPage() {
               className="w-56 rounded-lg border border-outline-variant bg-white py-sm pl-10 pr-md text-body-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary-container"
             />
           </div>
+          {canWrite && (
+            <button
+              type="button"
+              onClick={() => setImportOpen(true)}
+              className="flex items-center gap-xs rounded-lg border border-outline-variant bg-white px-md py-sm text-label-md text-on-surface-variant transition-colors hover:text-primary"
+            >
+              <MaterialIcon name="upload_file" size={16} />
+              Importar CSV
+            </button>
+          )}
           <div className="flex rounded-lg border border-outline-variant bg-surface-container-low p-xs">
             {(
               [
@@ -99,19 +120,21 @@ function MateriasPage() {
           {(materias.data ?? []).map((materia) => (
             <MateriaCard key={materia.id} materia={materia} onEdit={openEdit} />
           ))}
-          <button
-            type="button"
-            onClick={() => {
-              setEditing(null)
-              setModalOpen(true)
-            }}
-            className="flex min-h-[220px] flex-col items-center justify-center gap-sm rounded-xl border-2 border-dashed border-outline-variant text-outline transition-all hover:border-primary hover:text-primary"
-          >
-            <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-current">
-              <MaterialIcon name="add" size={24} />
-            </span>
-            <span className="text-label-md font-bold">Nueva Materia</span>
-          </button>
+          {canWrite && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(null)
+                setModalOpen(true)
+              }}
+              className="flex min-h-[220px] flex-col items-center justify-center gap-sm rounded-xl border-2 border-dashed border-outline-variant text-outline transition-all hover:border-primary hover:text-primary"
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-current">
+                <MaterialIcon name="add" size={24} />
+              </span>
+              <span className="text-label-md font-bold">Nueva Materia</span>
+            </button>
+          )}
         </section>
       ) : (
         <MateriasTable
@@ -125,17 +148,19 @@ function MateriasPage() {
       )}
 
       {/* FAB */}
-      <button
-        type="button"
-        onClick={() => {
-          setEditing(null)
-          setModalOpen(true)
-        }}
-        title="Nueva Materia"
-        className="fixed bottom-8 right-8 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary-container text-on-primary shadow-xl transition-all hover:scale-105 active:scale-95"
-      >
-        <MaterialIcon name="add" size={28} />
-      </button>
+      {canWrite && (
+        <button
+          type="button"
+          onClick={() => {
+            setEditing(null)
+            setModalOpen(true)
+          }}
+          title="Nueva Materia"
+          className="fixed bottom-8 right-8 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary-container text-on-primary shadow-xl transition-all hover:scale-105 active:scale-95"
+        >
+          <MaterialIcon name="add" size={28} />
+        </button>
+      )}
 
       <MateriaModal
         open={modalOpen}
@@ -144,6 +169,26 @@ function MateriasPage() {
           setEditing(null)
         }}
         materia={editing}
+      />
+
+      <CsvImportModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title="Importar Materias"
+        columns={['nombremateria', 'grupo', 'semestre', 'semestregestion', 'aniogestion', 'emaildocente']}
+        exampleRows={[
+          'TALLER DE GRADO I,A,7,I,2026,docente@university.edu',
+          'TALLER DE GRADO II,B,8,II,2026,',
+        ]}
+        helpText="emaildocente es opcional. semestregestion acepta I o II."
+        onImport={async (file) => {
+          const result = await importMaterias.mutateAsync(file)
+          const partes = []
+          if (result.creadas.length) partes.push(`${result.creadas.length} creadas`)
+          if (result.errors.length) partes.push(`${result.errors.length} errores`)
+          toast.info(partes.join(', ') || 'Sin cambios.')
+        }}
+        pending={importMaterias.isPending}
       />
     </div>
   )

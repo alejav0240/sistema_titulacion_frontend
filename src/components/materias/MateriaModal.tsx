@@ -23,9 +23,12 @@ export function MateriaModal({
   onClose: () => void
   materia: Materia | null
 }) {
+  const anioActual = new Date().getFullYear()
   const [nombre, setNombre] = useState('')
   const [grupo, setGrupo] = useState('')
-  const [semestre, setSemestre] = useState(9)
+  const [semestre, setSemestre] = useState(7)
+  const [gestionSemestre, setGestionSemestre] = useState<'I' | 'II'>('I')
+  const [gestionAnio, setGestionAnio] = useState(anioActual)
   const [docente, setDocente] = useState<string>('')
 
   const docentes = useUsers(1, { rol: 'DOCENTE' })
@@ -37,7 +40,9 @@ export function MateriaModal({
     if (open) {
       setNombre(materia?.nombre ?? '')
       setGrupo(materia?.grupo ?? '')
-      setSemestre(materia?.semestre ?? 9)
+      setSemestre(materia?.semestre ?? 7)
+      setGestionSemestre(materia?.gestion_semestre ?? 'I')
+      setGestionAnio(materia?.gestion_anio ?? anioActual)
       setDocente(materia?.docente_a_cargo ? String(materia.docente_a_cargo) : '')
     }
   }, [open, materia])
@@ -48,6 +53,8 @@ export function MateriaModal({
       nombre: nombre.trim(),
       grupo: grupo.trim(),
       semestre,
+      gestion_semestre: gestionSemestre,
+      gestion_anio: gestionAnio,
       docente_a_cargo: docente ? Number(docente) : null,
     }
     const options = { onSuccess: onClose }
@@ -82,13 +89,13 @@ export function MateriaModal({
           <div className="grid grid-cols-2 gap-md">
             <div className="flex flex-col gap-xs">
               <label className="text-label-md text-on-surface-variant" htmlFor="m-grupo">
-                Carrera / Grupo
+                Grupo
               </label>
               <input
                 id="m-grupo"
                 value={grupo}
                 onChange={(e) => setGrupo(e.target.value)}
-                placeholder="Ej. Ing. de Sistemas"
+                placeholder="Ej. A"
                 className={inputClass}
               />
             </div>
@@ -102,7 +109,7 @@ export function MateriaModal({
                 onChange={(e) => setSemestre(Number(e.target.value))}
                 className={inputClass}
               >
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                {[7, 8].map((n) => (
                   <option key={n} value={n}>
                     {n}°
                   </option>
@@ -110,6 +117,53 @@ export function MateriaModal({
               </select>
             </div>
           </div>
+
+          {/* Gestión académica */}
+          <div className="grid grid-cols-2 gap-md">
+            <div className="flex flex-col gap-xs">
+              <label className="text-label-md text-on-surface-variant" htmlFor="m-gestion-sem">
+                Gestión (semestre)
+              </label>
+              <select
+                id="m-gestion-sem"
+                value={gestionSemestre}
+                onChange={(e) => setGestionSemestre(e.target.value as 'I' | 'II')}
+                className={inputClass}
+              >
+                <option value="I">I</option>
+                <option value="II">II</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-xs">
+              <label className="text-label-md text-on-surface-variant" htmlFor="m-gestion-anio">
+                Gestión (año)
+              </label>
+              <select
+                id="m-gestion-anio"
+                value={gestionAnio}
+                onChange={(e) => setGestionAnio(Number(e.target.value))}
+                className={inputClass}
+              >
+                {Array.from(
+                  { length: 2050 - anioActual + 1 },
+                  (_, i) => anioActual + i,
+                ).map((anio) => (
+                  <option key={anio} value={anio}>
+                    {anio}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {nombre.trim() && (
+            <p className="rounded-lg bg-surface-container-low p-sm text-label-sm text-on-surface-variant">
+              Nombre completo:{' '}
+              <span className="font-bold text-primary">
+                {nombre.trim().toUpperCase()} {gestionSemestre} - {gestionAnio}
+              </span>
+            </p>
+          )}
           <div className="flex flex-col gap-xs">
             <label className="text-label-md text-on-surface-variant" htmlFor="m-docente">
               Docente titular

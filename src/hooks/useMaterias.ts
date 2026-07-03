@@ -43,7 +43,7 @@ export function useMateriaEstudiantes(id: number | undefined) {
   })
 }
 
-function useMateriaMutation<TVars>(fn: (vars: TVars) => Promise<unknown>) {
+function useMateriaMutation<TVars, TData = unknown>(fn: (vars: TVars) => Promise<TData>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: fn,
@@ -59,6 +59,8 @@ export interface MateriaPayload {
   nombre: string
   semestre: number
   grupo: string
+  gestion_semestre?: 'I' | 'II'
+  gestion_anio?: number
   docente_a_cargo?: number | null
 }
 
@@ -105,7 +107,7 @@ export function useEnrollCsv() {
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } },
       )
-      return data as { inscritos: string[]; errors: Array<{ row: number; error: string }> }
+      return data as { inscritos: string[]; creados: string[]; errors: Array<{ row: number; error: string }> }
     },
   )
 }
@@ -122,4 +124,33 @@ export function useUnenrollStudent() {
       await api.delete(`/api/materias/${materiaId}/estudiantes/${inscripcionId}/`)
     },
   )
+}
+
+export function useBulkUnenroll() {
+  return useMateriaMutation(
+    async ({
+      materiaId,
+      inscripcionIds,
+    }: {
+      materiaId: number
+      inscripcionIds: number[]
+    }) => {
+      const { data } = await api.post(
+        `/api/materias/${materiaId}/estudiantes/remove/`,
+        { inscripcion_ids: inscripcionIds },
+      )
+      return data as { eliminadas: number }
+    },
+  )
+}
+
+export function useImportMaterias() {
+  return useMateriaMutation(async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const { data } = await api.post('/api/materias/import/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return data as { creadas: string[]; errors: Array<{ row: number; error: string }> }
+  })
 }
