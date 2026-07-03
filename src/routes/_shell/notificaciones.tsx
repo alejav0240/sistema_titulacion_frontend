@@ -1,7 +1,10 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useStore } from '@tanstack/react-store'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import { CATEGORIA_ICONS } from '#/components/notifications/NotificationsDropdown'
+import { SendNotificationModal } from '#/components/dashboard/SendNotificationModal'
+import { authStore } from '#/hooks/useAuthStore'
 import {
   useMarkAllRead,
   useMarkRead,
@@ -61,6 +64,9 @@ function bucket(notificacion: Notificacion): string {
 function NotificacionesPage() {
   const [categoria, setCategoria] = useState<CategoriaNotificacion | ''>('')
   const [page, setPage] = useState(1)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const user = useStore(authStore, (s) => s.user)
+  const puedeNotificar = user?.rol !== 'ESTUDIANTE'
   const notifications = useNotifications({ categoria, page })
   const markRead = useMarkRead()
   const markAllRead = useMarkAllRead()
@@ -86,15 +92,31 @@ function NotificacionesPage() {
             Centro de Notificaciones
           </h2>
         </div>
-        <button
-          type="button"
-          onClick={() => markAllRead.mutate()}
-          className="flex items-center gap-xs rounded-lg bg-primary-container px-md py-sm text-label-md font-bold text-on-primary transition-all hover:brightness-110"
-        >
-          <MaterialIcon name="done_all" size={18} />
-          Marcar todo como leído
-        </button>
+        <div className="flex gap-sm">
+          {puedeNotificar && (
+            <button
+              type="button"
+              onClick={() => setNotifOpen(true)}
+              className="flex items-center gap-xs rounded-lg bg-primary px-md py-sm text-label-md font-bold text-[#fff] transition-all hover:brightness-110"
+            >
+              <MaterialIcon name="send" size={18} />
+              Enviar notificación
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => markAllRead.mutate()}
+            className="flex items-center gap-xs rounded-lg bg-primary-container px-md py-sm text-label-md font-bold text-on-primary transition-all hover:brightness-110"
+          >
+            <MaterialIcon name="done_all" size={18} />
+            Marcar todo como leído
+          </button>
+        </div>
       </section>
+
+      {puedeNotificar && (
+        <SendNotificationModal open={notifOpen} onClose={() => setNotifOpen(false)} />
+      )}
 
       {/* Tabs por categoría */}
       <div className="flex flex-wrap gap-sm">

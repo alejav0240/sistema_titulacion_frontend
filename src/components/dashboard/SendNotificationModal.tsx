@@ -7,33 +7,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
+import { UserSearchCombobox } from '#/components/ui/UserSearchCombobox'
 import { useSendNotification } from '#/hooks/useNotifications'
 import { cn } from '#/lib/utils'
 
-export interface Destinatario {
-  id: number
-  nombre: string
-}
+const ROLES_FILTRO = [
+  ['', 'Todos'],
+  ['ESTUDIANTE', 'Estudiantes'],
+  ['DOCENTE', 'Docentes'],
+  ['TUTOR', 'Tutores'],
+  ['TRIBUNAL', 'Tribunales'],
+] as const
 
-/** Modal "Envío de Notificación Personalizada" (pantalla 03df1d3a). */
+/** Envío manual de notificaciones a cualquier usuario, con buscador estilo Teams. */
 export function SendNotificationModal({
   open,
   onClose,
-  destinatarios,
 }: {
   open: boolean
   onClose: () => void
-  destinatarios: Destinatario[]
 }) {
-  const [seleccionados, setSeleccionados] = useState<number[]>([])
+  const [seleccionados, setSeleccionados] = useState<Array<{ id: number; nombre: string }>>([])
+  const [rolFiltro, setRolFiltro] = useState('')
   const [asunto, setAsunto] = useState('')
   const [mensaje, setMensaje] = useState('')
   const send = useSendNotification()
-
-  const toggle = (id: number) =>
-    setSeleccionados((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    )
 
   const reset = () => {
     setSeleccionados([])
@@ -59,7 +57,7 @@ export function SendNotificationModal({
             if (!seleccionados.length || !asunto.trim() || !mensaje.trim()) return
             send.mutate(
               {
-                destinatarios: seleccionados,
+                destinatarios: seleccionados.map((s) => s.id),
                 titulo: asunto.trim(),
                 mensaje: mensaje.trim(),
               },
@@ -74,28 +72,58 @@ export function SendNotificationModal({
         >
           <div className="flex flex-col gap-xs">
             <label className="text-label-md text-on-surface-variant">Para</label>
-            <div className="thin-scrollbar flex max-h-32 flex-wrap gap-xs overflow-y-auto rounded-xl border border-outline-variant p-sm">
-              {destinatarios.map((destinatario) => (
+
+            {/* Filtro por rol */}
+            <div className="flex flex-wrap gap-xs">
+              {ROLES_FILTRO.map(([value, label]) => (
                 <button
-                  key={destinatario.id}
+                  key={value}
                   type="button"
-                  onClick={() => toggle(destinatario.id)}
+                  onClick={() => setRolFiltro(value)}
                   className={cn(
-                    'rounded-full border px-sm py-xs text-label-sm transition-all',
-                    seleccionados.includes(destinatario.id)
-                      ? 'border-primary-container bg-primary-container text-on-primary'
-                      : 'border-outline-variant text-on-surface-variant hover:border-primary',
+                    'rounded-full px-sm py-[2px] text-[10px] font-bold uppercase tracking-wider transition-all',
+                    rolFiltro === value
+                      ? 'bg-primary-container text-on-primary'
+                      : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high',
                   )}
                 >
-                  {destinatario.nombre}
+                  {label}
                 </button>
               ))}
-              {destinatarios.length === 0 && (
-                <p className="text-body-sm text-outline">
-                  No tienes estudiantes asignados.
-                </p>
-              )}
             </div>
+
+            <UserSearchCombobox
+              roles={rolFiltro || undefined}
+              excludeIds={seleccionados.map((s) => s.id)}
+              placeholder="Buscar usuario por nombre o email…"
+              onSelect={(usuario) =>
+                setSeleccionados((prev) => [...prev, { id: usuario.id, nombre: usuario.nombre }])
+              }
+            />
+
+            {/* Chips de seleccionados */}
+            {seleccionados.length > 0 && (
+              <div className="flex flex-wrap gap-xs">
+                {seleccionados.map((sel) => (
+                  <span
+                    key={sel.id}
+                    className="flex items-center gap-xs rounded-full bg-primary-container px-sm py-xs text-label-sm text-on-primary"
+                  >
+                    {sel.nombre}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSeleccionados((prev) => prev.filter((s) => s.id !== sel.id))
+                      }
+                      aria-label={`Quitar ${sel.nombre}`}
+                      className="hover:opacity-70"
+                    >
+                      <MaterialIcon name="close" size={14} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-xs">
@@ -155,7 +183,7 @@ export function SendNotificationModal({
               !asunto.trim() ||
               !mensaje.trim()
             }
-            className="flex h-[48px] w-full items-center justify-center gap-sm rounded-xl bg-[#16A34A] text-label-md font-bold text-white transition-all hover:brightness-110 disabled:opacity-50"
+            className="flex h-[48px] w-full items-center justify-center gap-sm rounded-xl bg-[#16A34A] text-label-md font-bold text-[#fff] transition-all hover:brightness-110 disabled:opacity-50"
           >
             <MaterialIcon name="send" size={18} />
             {send.isPending ? 'Enviando…' : 'Enviar notificación'}
