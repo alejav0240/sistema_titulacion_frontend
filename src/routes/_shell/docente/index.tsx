@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMemo, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '@tanstack/react-store'
 import { authStore } from '#/hooks/useAuthStore'
 import {
@@ -12,9 +12,6 @@ import {
 import { toast } from 'sonner'
 import { AuthGuard } from '#/components/auth/AuthGuard'
 import { MiniCalendar } from '#/components/dashboard/MiniCalendar'
-import {
-  SendNotificationModal,
-} from '#/components/dashboard/SendNotificationModal'
 import { StatusBadge } from '#/components/projects/StatusBadge'
 import { ClientOnly } from '#/components/ui/ClientOnly'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
@@ -53,37 +50,18 @@ const FILTROS_BASE: Array<[Filtro, string]> = [
   ['materia', 'Docente materia'],
 ]
 
-const ACTIVIDAD_LABELS: Record<string, string> = {
-  CREACION: 'creó una observación en',
-  SUBSANACION: 'respondió observación en',
-  APROBACION: 'aprobó una corrección en',
-  REOBSERVACION: 'reobservó una corrección en',
-}
-
 function TeacherDashboard() {
   const dashboard = useTeacherDashboard()
   const currentUser = useStore(authStore, (s) => s.user)
   const esDocenteMateria = currentUser?.capacidades?.includes('DOCENTE_MATERIA') ?? false
   const filtros = esDocenteMateria ? FILTROS_BASE : FILTROS_BASE.filter(([k]) => k !== 'materia')
   const [filtro, setFiltro] = useState<Filtro>('todos')
-  const [notifOpen, setNotifOpen] = useState(false)
 
   useEffect(() => {
     if (filtro === 'materia' && !esDocenteMateria) setFiltro('todos')
   }, [esDocenteMateria, filtro])
 
   const data = dashboard.data
-
-  const destinatarios = useMemo(() => {
-    const map = new Map<number, string>()
-    for (const proyecto of [
-      ...(data?.tutorias ?? []),
-      ...(data?.tribunales ?? []),
-    ]) {
-      map.set(proyecto.estudiante, proyecto.estudiante_nombre)
-    }
-    return Array.from(map, ([id, nombre]) => ({ id, nombre }))
-  }, [data])
 
   if (dashboard.isLoading) {
     return (
@@ -125,12 +103,7 @@ function TeacherDashboard() {
           {show('tribunal') && (
             <TribunalesCard proyectos={data?.tribunales ?? []} />
           )}
-          {show('materia') && esDocenteMateria && (
-            <>
-              <PropuestasPendientesCard />
-              <PendientesMateriaCard pendientes={data?.pendientes_materia ?? []} />
-            </>
-          )}
+          {show('materia') && esDocenteMateria && <PropuestasPendientesCard />}
         </div>
 
         {/* Columna lateral */}
@@ -186,10 +159,7 @@ function TeacherDashboard() {
                   <div className="min-w-0">
                     <p className="text-body-sm text-on-surface">
                       <span className="font-bold">{item.autor}</span>{' '}
-                      {ACTIVIDAD_LABELS[item.tipo] ?? item.tipo}{' '}
-                      <span className="font-medium text-primary">
-                        {item.proyecto}
-                      </span>
+                      <span className="text-on-surface-variant">{item.proyecto}</span>
                     </p>
                     <p className="text-label-sm text-outline">
                       {timeAgo(item.created_at)}
@@ -205,21 +175,6 @@ function TeacherDashboard() {
         </div>
       </div>
 
-      {/* FAB enviar notificación */}
-      <button
-        type="button"
-        onClick={() => setNotifOpen(true)}
-        className="fixed bottom-8 right-8 z-40 flex items-center gap-sm rounded-full bg-[#16A34A] px-lg py-md text-label-md font-bold text-white shadow-xl transition-all hover:scale-105 active:scale-95"
-      >
-        <MaterialIcon name="send" size={18} />
-        Enviar notificación
-      </button>
-
-      <SendNotificationModal
-        open={notifOpen}
-        onClose={() => setNotifOpen(false)}
-        destinatarios={destinatarios}
-      />
     </div>
   )
 }
@@ -381,72 +336,8 @@ function TribunalesCard({ proyectos }: { proyectos: Proyecto[] }) {
   )
 }
 
-function PendientesMateriaCard({
-  pendientes,
-}: {
-  pendientes: Array<{
-    version_id: number
-    estudiante: string
-    proyecto: string
-    materia: string
-    numero_version: number
-    created_at: string
-  }>
-}) {
-  const navigate = useNavigate()
-  return (
-    <div className="rounded-xl border border-outline-variant bg-white p-lg">
-      <div className="mb-md flex items-center justify-between">
-        <h3 className="text-label-md font-bold text-on-surface">
-          Revisiones pendientes (docente materia)
-        </h3>
-        <RolBadge label="Materia" />
-      </div>
-      <div className="grid grid-cols-1 gap-md md:grid-cols-3">
-        {pendientes.map((pendiente) => (
-          <div
-            key={pendiente.version_id}
-            className="rounded-xl border border-outline-variant p-md"
-          >
-            <div className="flex items-center justify-between">
-              <span className="rounded bg-error-container px-xs text-[9px] font-bold uppercase text-on-error-container">
-                {timeAgo(pendiente.created_at)}
-              </span>
-            </div>
-            <p className="mt-sm text-label-md font-bold text-on-surface">
-              {pendiente.estudiante}
-            </p>
-            <p className="truncate text-label-sm text-outline">
-              {pendiente.materia || pendiente.proyecto}
-            </p>
-            <button
-              type="button"
-              onClick={() =>
-                navigate({
-                  to: '/revision/$versionId',
-                  params: { versionId: String(pendiente.version_id) },
-                  search: {},
-                })
-              }
-              className="mt-md w-full rounded-lg bg-secondary py-sm text-label-md font-bold text-on-secondary transition-all hover:brightness-110"
-            >
-              Evaluar
-            </button>
-          </div>
-        ))}
-        {pendientes.length === 0 && (
-          <p className="col-span-3 py-md text-center text-body-sm text-outline">
-            No hay entregas pendientes de evaluación.
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-
 function PropuestasPendientesCard() {
-  const { data, isLoading } = useProjects({ etapa: 'PROPUESTA' })
+  const { data, isLoading } = useProjects({ estado_aprobacion: 'PENDIENTE' })
   const aprobar = useAprobarPropuesta()
   const rechazar = useRechazarPropuesta()
   const [rechazoOpen, setRechazoOpen] = useState(false)
@@ -455,11 +346,9 @@ function PropuestasPendientesCard() {
 
   const propuestas = data?.results ?? []
 
-  if (!isLoading && propuestas.length === 0) return null
-
   return (
     <>
-      <div className="rounded-xl border border-[#FDE68A] bg-[#FFFBEB] p-lg">
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-lg dark:border-amber-800 dark:bg-amber-950/30">
         <div className="mb-md flex items-center justify-between">
           <h3 className="text-label-md font-bold text-on-surface">
             Propuestas pendientes de aprobación
@@ -473,7 +362,7 @@ function PropuestasPendientesCard() {
             {propuestas.map((proyecto) => (
               <div
                 key={proyecto.id}
-                className="flex items-center justify-between rounded-lg border border-[#FDE68A] bg-white p-sm"
+                className="flex items-center justify-between rounded-lg border border-amber-200 bg-white p-sm dark:border-amber-800"
               >
                 <div className="min-w-0">
                   <p className="text-label-md font-bold text-on-surface">
@@ -495,7 +384,7 @@ function PropuestasPendientesCard() {
                         onSuccess: () => toast.success('Propuesta aprobada.'),
                       })
                     }
-                    className="rounded-lg bg-[#10B981] px-md py-sm text-label-sm font-bold text-white transition-all hover:brightness-110 disabled:opacity-50"
+                    className="rounded-lg bg-[#10B981] px-md py-sm text-label-sm font-bold text-[#fff] transition-all hover:brightness-110 disabled:opacity-50"
                   >
                     Aprobar
                   </button>
@@ -513,6 +402,11 @@ function PropuestasPendientesCard() {
                 </div>
               </div>
             ))}
+            {propuestas.length === 0 && (
+              <p className="py-md text-center text-body-sm text-outline">
+                No hay propuestas pendientes de aprobación.
+              </p>
+            )}
           </div>
         )}
       </div>
