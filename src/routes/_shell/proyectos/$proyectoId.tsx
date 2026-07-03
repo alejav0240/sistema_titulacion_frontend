@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useStore } from '@tanstack/react-store'
-import { GraduationStepper } from '#/components/dashboard/GraduationStepper'
+import { AsignacionesProyecto } from '#/components/projects/AsignacionesProyecto'
 import { DefensaPanel } from '#/components/projects/DefensaPanel'
 import { StatusBadge } from '#/components/projects/StatusBadge'
+import { RevisionBreakdown } from '#/components/projects/RevisionRow'
 import { ObservationMatrix } from '#/components/annotations/ObservationMatrix'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import { initials } from '#/components/layout/Topbar'
@@ -11,7 +12,7 @@ import { authStore } from '#/hooks/useAuthStore'
 import { useProject } from '#/hooks/useProjects'
 import { useVersions } from '#/hooks/useVersions'
 import api from '#/lib/api'
-import { formatDate, formatDateTime } from '#/lib/datetime'
+import { formatDate } from '#/lib/datetime'
 import { ETAPA_LABELS } from '#/types/project'
 import type { Anotacion } from '#/types/annotation'
 
@@ -87,17 +88,27 @@ function ProyectoDetailPage() {
         </div>
       </section>
 
-      <GraduationStepper etapa={data.etapa} />
-
       <ObservacionesSection proyectoId={id} />
 
       <section className="grid grid-cols-1 gap-lg lg:grid-cols-3">
         {/* Historial de versiones */}
         <div className="rounded-xl border border-outline-variant bg-white p-lg lg:col-span-2">
-          <h3 className="mb-md flex items-center gap-sm text-label-md font-bold text-on-surface">
-            <MaterialIcon name="history" size={20} className="text-primary" />
-            Historial de versiones
-          </h3>
+          <div className="mb-md flex items-center justify-between">
+            <h3 className="flex items-center gap-sm text-label-md font-bold text-on-surface">
+              <MaterialIcon name="history" size={20} className="text-primary" />
+              Historial de versiones
+            </h3>
+            {user?.rol === 'ESTUDIANTE' && user.id === data.estudiante && (
+              <button
+                type="button"
+                onClick={() => navigate({ to: '/student', search: { nueva: 1 } })}
+                className="flex items-center gap-xs rounded-lg bg-primary px-md py-sm text-label-sm font-bold text-[#fff] transition-all hover:brightness-110"
+              >
+                <MaterialIcon name="upload_file" size={16} />
+                Subir versión
+              </button>
+            )}
+          </div>
           {versiones.isLoading ? (
             <p className="text-body-sm text-outline">Cargando…</p>
           ) : (versiones.data ?? []).length === 0 ? (
@@ -123,13 +134,6 @@ function ProyectoDetailPage() {
                     </div>
                     <p className="mt-xs text-label-sm text-outline">
                       Subida el {formatDate(version.created_at)}
-                      {version.revisada_por_nombre && version.revisada_el && (
-                        <>
-                          {' · '}
-                          Revisada por {version.revisada_por_nombre} el{' '}
-                          {formatDateTime(version.revisada_el)}
-                        </>
-                      )}
                       {version.anotaciones_total > 0 && (
                         <>
                           {' · '}
@@ -138,20 +142,41 @@ function ProyectoDetailPage() {
                         </>
                       )}
                     </p>
+                    {/* Revisión de tutor y tribunales */}
+                    <div className="mt-sm">
+                      <RevisionBreakdown revisiones={version.revisiones ?? []} />
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigate({
-                        to: '/revision',
-                        search: { proyecto: id },
-                      })
-                    }
-                    title="Abrir en el visor"
-                    className="shrink-0 rounded-lg p-sm text-primary transition-colors hover:bg-surface-container-low"
-                  >
-                    <MaterialIcon name="open_in_new" size={20} />
-                  </button>
+                  <div className="flex shrink-0 gap-xs">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate({
+                          to: '/revision/$versionId',
+                          params: { versionId: String(version.id) },
+                          search: { panel: 1 },
+                        })
+                      }
+                      title="Ver solo observaciones"
+                      className="rounded-lg p-sm text-outline transition-colors hover:bg-surface-container-low hover:text-primary"
+                    >
+                      <MaterialIcon name="forum" size={20} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate({
+                          to: '/revision/$versionId',
+                          params: { versionId: String(version.id) },
+                          search: {},
+                        })
+                      }
+                      title="Abrir en el visor"
+                      className="rounded-lg p-sm text-primary transition-colors hover:bg-surface-container-low"
+                    >
+                      <MaterialIcon name="open_in_new" size={20} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -160,6 +185,8 @@ function ProyectoDetailPage() {
 
         {/* Columna lateral */}
         <div className="space-y-lg">
+          {isAdmin && <AsignacionesProyecto estudianteId={data.estudiante} />}
+
           <DefensaPanel
             proyectoId={id}
             isAdmin={isAdmin}
@@ -198,6 +225,17 @@ function ProyectoDetailPage() {
                   </div>
                 </div>
               )}
+              {data.tribunal_nombres.map((nombre) => (
+                <div key={nombre} className="flex items-center gap-sm">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-high text-[10px] font-bold text-primary">
+                    {initials(nombre)}
+                  </span>
+                  <div>
+                    <p className="text-label-md text-on-surface">{nombre}</p>
+                    <p className="text-label-sm text-outline">Tribunal</p>
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="mt-md border-t border-outline-variant/60 pt-md text-label-sm text-outline">
               <p>Registrado el {formatDate(data.created_at)}</p>

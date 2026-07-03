@@ -25,7 +25,7 @@ export function GraduationStepper({ etapa }: { etapa: Etapa }) {
                 <div
                   className={cn(
                     'flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all',
-                    done && 'border-primary-container bg-primary-container text-white',
+                    done && 'border-primary-container bg-primary-container text-[#fff]',
                     current &&
                       'border-primary-container bg-white text-primary ring-4 ring-primary-container/20',
                     !done && !current && 'border-outline-variant bg-white text-outline',

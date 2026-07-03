@@ -11,8 +11,8 @@ const COLUMNS: Array<{
 }> = [
   { estado: 'BORRADOR', label: 'Borrador', dot: 'bg-outline' },
   { estado: 'EN REVISION', label: 'En revisión', dot: 'bg-secondary' },
-  { estado: 'OBSERVADO', label: 'Observado', dot: 'bg-[#F59E0B]' },
-  { estado: 'APROBADO', label: 'Aprobado', dot: 'bg-[#10B981]' },
+  { estado: 'OBSERVADO', label: 'Observado', dot: 'bg-amber-500' },
+  { estado: 'APROBADO', label: 'Aprobado', dot: 'bg-emerald-500' },
 ]
 
 export function ProjectsKanban({ proyectos }: { proyectos: Proyecto[] }) {

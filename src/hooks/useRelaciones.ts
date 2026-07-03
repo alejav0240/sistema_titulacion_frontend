@@ -26,11 +26,22 @@ export function useRelaciones(params: { estudiante?: number; docente?: number })
 export function useCreateRelacion() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (payload: { estudiante: number; docente: number; relacion: 'TUTOR' | 'TRIBUNAL' }) => {
+    mutationFn: async (payload: {
+      estudiante: number
+      docente: number
+      relacion: 'TUTOR' | 'TRIBUNAL'
+      force?: boolean
+    }) => {
       const { data } = await api.post<Relacion>('/api/relationships/', payload)
       return data
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['relationships'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['relationships'] })
+      qc.invalidateQueries({ queryKey: ['projects'] })
+      qc.invalidateQueries({ queryKey: ['project'] })
+      qc.invalidateQueries({ queryKey: ['versions'] })
+    },
+    meta: { silentError: true },
   })
 }
 
@@ -40,6 +51,11 @@ export function useDeleteRelacion() {
     mutationFn: async (id: number) => {
       await api.delete(`/api/relationships/${id}/`)
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['relationships'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['relationships'] })
+      qc.invalidateQueries({ queryKey: ['projects'] })
+      qc.invalidateQueries({ queryKey: ['project'] })
+      qc.invalidateQueries({ queryKey: ['versions'] })
+    },
   })
 }

@@ -10,7 +10,10 @@ export interface ProjectFilters {
   search?: string
   estado?: string
   etapa?: string
+  estado_aprobacion?: string
+  include_rechazados?: string
   tutor?: string
+  como?: 'tutor' | 'tribunal'
   page?: number
   page_size?: number
 }

@@ -2,12 +2,14 @@ import { cn } from '#/lib/utils'
 import { ESTADO_REVISION_LABELS } from '#/types/project'
 import type { EstadoRevision } from '#/types/project'
 
-const STYLES: Record<EstadoRevision, string> = {
+export const ESTADO_VERSION_STYLES: Record<EstadoRevision, string> = {
   BORRADOR: 'bg-surface-container text-on-surface-variant',
   'EN REVISION': 'bg-secondary-container text-on-secondary-container',
-  OBSERVADO: 'bg-[#FEF3C7] text-[#92400E]',
-  APROBADO: 'bg-[#D1FAE5] text-[#065F46]',
+  OBSERVADO: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+  APROBADO:
+    'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
 }
+const STYLES = ESTADO_VERSION_STYLES
 
 export function StatusBadge({
   estado,

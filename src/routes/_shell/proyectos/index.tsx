@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { ProjectsKanban } from '#/components/projects/ProjectsKanban'
-import { StatusBadge } from '#/components/projects/StatusBadge'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import { initials } from '#/components/layout/Topbar'
 import {
@@ -11,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
+import { useDebouncedValue } from '#/hooks/useDebouncedValue'
 import { downloadProjectsExport, useProjects } from '#/hooks/useProjects'
 import { formatDate } from '#/lib/datetime'
 import { cn } from '#/lib/utils'
@@ -23,7 +23,24 @@ export const Route = createFileRoute('/_shell/proyectos/')({
   component: ProyectosPage,
 })
 
-const ESTADOS = ['', 'BORRADOR', 'EN REVISION', 'OBSERVADO', 'APROBADO'] as const
+const ESTADOS = [
+  ['', 'Estado: Todos'],
+  ['APROBADO', 'Aprobado'],
+  ['PENDIENTE', 'En revisión'],
+  ['RECHAZADO', 'Rechazado'],
+] as const
+
+const APROBACION_STYLES: Record<string, string> = {
+  APROBADO: 'bg-secondary-container text-on-secondary-container',
+  PENDIENTE: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+  RECHAZADO: 'bg-error-container text-on-error-container',
+}
+
+const APROBACION_LABELS: Record<string, string> = {
+  APROBADO: 'Aprobado',
+  PENDIENTE: 'En revisión',
+  RECHAZADO: 'Rechazado',
+}
 
 function ProyectosPage() {
   const { view = 'tabla', search: searchParam } = Route.useSearch()
@@ -41,9 +58,10 @@ function ProyectosPage() {
   }, [searchParam])
 
   const isKanban = view === 'kanban'
+  const debouncedSearch = useDebouncedValue(search.trim(), 300)
   const projects = useProjects({
-    search: search || undefined,
-    estado: estado || undefined,
+    search: debouncedSearch || undefined,
+    estado_aprobacion: estado || undefined,
     page: isKanban ? 1 : page,
     page_size: isKanban ? 100 : 10,
   })
@@ -141,11 +159,9 @@ function ProyectosPage() {
           }}
           className="rounded-lg border border-outline-variant bg-white px-md py-sm text-body-sm outline-none focus:border-primary"
         >
-          {ESTADOS.map((value) => (
+          {ESTADOS.map(([value, label]) => (
             <option key={value} value={value}>
-              {value === ''
-                ? 'Estado: Todos'
-                : value.charAt(0) + value.slice(1).toLowerCase()}
+              {label}
             </option>
           ))}
         </select>
@@ -167,6 +183,7 @@ function ProyectosPage() {
                   'Proyecto',
                   'Estudiante',
                   'Tutor',
+                  'Tribunales',
                   'Estado',
                   'Última versión',
                   'Obs.',
@@ -191,7 +208,7 @@ function ProyectosPage() {
                       params: { proyectoId: String(proyecto.id) },
                     })
                   }
-                  className="cursor-pointer border-b border-outline-variant/50 transition-colors last:border-none hover:bg-surface-container-low/50"
+                  className="cursor-pointer border-b border-outline-variant/50 transition-colors last:border-none hover:bg-primary/10"
                 >
                   <td className="max-w-[260px] px-md py-md">
                     <p className="truncate text-label-md font-bold text-on-surface">
@@ -214,8 +231,22 @@ function ProyectosPage() {
                   <td className="px-md py-md text-body-sm text-secondary">
                     {proyecto.tutor_nombre ?? '—'}
                   </td>
+                  <td className="px-md py-md text-body-sm text-secondary">
+                    {proyecto.tribunal_nombres.length > 0
+                      ? proyecto.tribunal_nombres.map((nombre) => (
+                          <p key={nombre} className="truncate">{nombre}</p>
+                        ))
+                      : '—'}
+                  </td>
                   <td className="px-md py-md">
-                    <StatusBadge estado={proyecto.estado_revision} />
+                    <span
+                      className={cn(
+                        'rounded-full px-sm py-[2px] text-[10px] font-bold uppercase',
+                        APROBACION_STYLES[proyecto.estado_aprobacion],
+                      )}
+                    >
+                      {APROBACION_LABELS[proyecto.estado_aprobacion]}
+                    </span>
                   </td>
                   <td className="px-md py-md text-body-sm text-on-surface-variant">
                     {proyecto.ultima_version
@@ -232,33 +263,49 @@ function ProyectosPage() {
                     )}
                   </td>
                   <td className="px-md py-md">
-                    <button
-                      type="button"
-                      disabled={!proyecto.ultima_version}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (proyecto.ultima_version) {
+                    <div className="flex items-center">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
                           navigate({
-                            to: '/revision/$versionId',
-                            params: {
-                              versionId: String(proyecto.ultima_version.id),
-                            },
-                            search: {},
+                            to: '/proyectos/$proyectoId',
+                            params: { proyectoId: String(proyecto.id) },
                           })
-                        }
-                      }}
-                      title="Abrir en el visor"
-                      className="rounded-lg p-sm text-primary transition-colors hover:bg-surface-container-low disabled:opacity-30"
-                    >
-                      <MaterialIcon name="rate_review" size={20} />
-                    </button>
+                        }}
+                        title="Ver detalle"
+                        className="rounded-lg p-sm text-primary transition-colors hover:bg-surface-container-low"
+                      >
+                        <MaterialIcon name="visibility" size={20} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!proyecto.ultima_version}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (proyecto.ultima_version) {
+                            navigate({
+                              to: '/revision/$versionId',
+                              params: {
+                                versionId: String(proyecto.ultima_version.id),
+                              },
+                              search: {},
+                            })
+                          }
+                        }}
+                        title="Abrir en el visor"
+                        className="rounded-lg p-sm text-primary transition-colors hover:bg-surface-container-low disabled:opacity-30"
+                      >
+                        <MaterialIcon name="rate_review" size={20} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
               {(data?.results ?? []).length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="py-xl text-center text-body-sm text-outline"
                   >
                     No se encontraron proyectos.
