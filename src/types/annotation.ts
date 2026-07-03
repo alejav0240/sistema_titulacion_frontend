@@ -1,8 +1,9 @@
-export type EstadoAnotacion = 'PENDIENTE' | 'SUBSANADA' | 'APROBADA'
+export type EstadoAnotacion = 'PENDIENTE' | 'SUBSANADA' | 'APELADA' | 'APROBADA'
 export type Severidad = 'CRITICO' | 'SUGERENCIA'
 export type TipoEventoAnotacion =
   | 'CREACION'
   | 'SUBSANACION'
+  | 'APELACION'
   | 'APROBACION'
   | 'REOBSERVACION'
 
@@ -30,6 +31,7 @@ export interface Anotacion {
   accion_realizada: string
   nota_observacion: NotaComentario | null
   nota_correccion: NotaComentario | null
+  version_correccion: number | null
   creado_el: string
   subsanada_el: string | null
   corregido_el: string | null
@@ -55,5 +57,5 @@ export interface RectNormalizado {
 export interface AnotacionCreate extends RectNormalizado {
   comentario: string
   severidad: Severidad
-  accion_a_realizar?: string
+  accion_a_realizar: string
 }

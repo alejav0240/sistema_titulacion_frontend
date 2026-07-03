@@ -1,10 +1,14 @@
+import { useState } from 'react'
 import { ObservationCard } from './ObservationCard'
+import { MaterialIcon } from '#/components/ui/MaterialIcon'
+import { useAprobarMasivo } from '#/hooks/useAnnotations'
 import type { Anotacion, RectNormalizado } from '#/types/annotation'
 
 export function ObservationsPanel({
   annotations,
   isRevisor,
   isOwner,
+  currentUserId,
   selectedId,
   onSelect,
   onSubsanarDraw,
@@ -14,6 +18,7 @@ export function ObservationsPanel({
   annotations: Anotacion[]
   isRevisor: boolean
   isOwner: boolean
+  currentUserId?: number | null
   selectedId: number | null
   onSelect: (anotacion: Anotacion) => void
   onSubsanarDraw?: (id: number) => void
@@ -21,6 +26,17 @@ export function ObservationsPanel({
   onSubsanarReset?: () => void
 }) {
   const pendientes = annotations.filter((a) => a.estado === 'PENDIENTE').length
+  const [seleccionadas, setSeleccionadas] = useState<Set<number>>(new Set())
+  const aprobarMasivo = useAprobarMasivo()
+
+  const toggle = (id: number) => {
+    setSeleccionadas((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   return (
     <section className="thin-scrollbar flex w-[35%] min-w-[320px] flex-col overflow-y-auto border-r border-outline-variant bg-white/60 p-lg backdrop-blur-md">
@@ -33,6 +49,28 @@ export function ObservationsPanel({
             {pendientes} Pendientes
           </span>
         </div>
+
+        {/* Aprobación masiva de subsanadas/apeladas propias */}
+        {seleccionadas.size > 0 && (
+          <div className="sticky top-0 z-10 flex items-center justify-between rounded-lg bg-primary-container p-sm shadow-md">
+            <span className="text-label-sm font-bold text-[#fff]">
+              {seleccionadas.size} seleccionada{seleccionadas.size !== 1 ? 's' : ''}
+            </span>
+            <button
+              type="button"
+              disabled={aprobarMasivo.isPending}
+              onClick={() =>
+                aprobarMasivo.mutate([...seleccionadas], {
+                  onSuccess: () => setSeleccionadas(new Set()),
+                })
+              }
+              className="flex items-center gap-xs rounded bg-[#fff] px-sm py-1 text-[10px] font-bold uppercase text-primary-container hover:bg-[#fff]/90 disabled:opacity-50"
+            >
+              <MaterialIcon name="done_all" size={14} />
+              {aprobarMasivo.isPending ? 'Aprobando…' : 'Aprobar seleccionadas'}
+            </button>
+          </div>
+        )}
 
         {annotations.length === 0 && (
           <p className="rounded-lg border border-dashed border-outline-variant p-lg text-center text-body-sm text-outline">
@@ -47,7 +85,10 @@ export function ObservationsPanel({
             anotacion={anotacion}
             isRevisor={isRevisor}
             isOwner={isOwner}
+            currentUserId={currentUserId}
             selected={selectedId === anotacion.id}
+            checked={seleccionadas.has(anotacion.id)}
+            onToggleCheck={() => toggle(anotacion.id)}
             onClick={() => onSelect(anotacion)}
             onRequestDraw={
               onSubsanarDraw ? () => onSubsanarDraw(anotacion.id) : undefined

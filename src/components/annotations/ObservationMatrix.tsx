@@ -5,12 +5,14 @@ import type { Anotacion } from '#/types/annotation'
 const ESTADO_BADGE: Record<string, string> = {
   PENDIENTE: 'bg-[#FEF3C7] text-[#92400E]',
   SUBSANADA: 'bg-[#DBEAFE] text-[#1E40AF]',
+  APELADA: 'bg-[#E0E7FF] text-[#3730A3]',
   APROBADA: 'bg-[#D1FAE5] text-[#065F46]',
 }
 
 const ESTADO_LABEL: Record<string, string> = {
   PENDIENTE: 'Pendiente',
   SUBSANADA: 'Subsanada',
+  APELADA: 'Apelada',
   APROBADA: 'Aprobada',
 }
 
@@ -86,25 +88,18 @@ export function ObservationMatrix({ observaciones }: { observaciones: Anotacion[
                       {anotacion.nota_observacion?.comentario ?? '—'}
                     </p>
                     {anotacion.accion_a_realizar && (
-                      <p className="mt-xs text-[10px] text-outline">
-                        Acción: {anotacion.accion_a_realizar}
+                      <p className="mt-xs border-t border-outline-variant/40 pt-xs text-[11px] font-medium text-secondary">
+                        → Acción: {anotacion.accion_a_realizar}
                       </p>
                     )}
                   </td>
                   <td className="max-w-[220px] py-sm pr-md">
-                    {anotacion.accion_realizada && (
+                    {anotacion.accion_realizada ? (
                       <p className="text-label-md font-medium text-on-surface">
                         {anotacion.accion_realizada}
                       </p>
-                    )}
-                    {anotacion.nota_correccion ? (
-                      <p className="mt-xs text-body-sm text-on-surface-variant">
-                        {anotacion.nota_correccion.comentario}
-                      </p>
                     ) : (
-                      !anotacion.accion_realizada && (
-                        <span className="text-label-sm text-outline">Sin corrección</span>
-                      )
+                      <span className="text-label-sm text-outline">Sin corrección</span>
                     )}
                   </td>
                   <td className="py-sm">

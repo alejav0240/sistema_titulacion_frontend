@@ -9,6 +9,16 @@ import type { Anotacion, RectNormalizado } from '#/types/annotation'
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
 
+/** Color del rectángulo de observación según su estado: pendiente/subsanada
+ * (aún sin aprobar) quedan en amarillo, apelada en azul, solo la aprobada
+ * pasa a verde. */
+const COLOR_ESTADO_OBSERVACION: Record<string, string> = {
+  PENDIENTE: 'border-b-2 border-[#FFD700] bg-[rgba(255,222,0,0.3)] hover:bg-[rgba(255,222,0,0.45)]',
+  SUBSANADA: 'border-b-2 border-[#FFD700] bg-[rgba(255,222,0,0.3)] hover:bg-[rgba(255,222,0,0.45)]',
+  APELADA: 'border-b-2 border-[#3b82f6] bg-[rgba(59,130,246,0.3)] hover:bg-[rgba(59,130,246,0.45)]',
+  APROBADA: 'border-b-2 border-[#22c55e] bg-[rgba(34,197,94,0.3)] hover:bg-[rgba(34,197,94,0.45)]',
+}
+
 export interface DraftRect extends RectNormalizado {
   /** Posición en píxeles dentro del contenedor de la página (para el popover) */
   pixel: { left: number; top: number; width: number; height: number }
@@ -124,12 +134,13 @@ export default function PdfDocumentView({
     setDrawing(null)
     if (!el || drawing.w < 8 || drawing.h < 8) return
     const bounds = el.getBoundingClientRect()
+    const r6 = (n: number) => Math.round(n * 1e6) / 1e6
     onDrawComplete?.({
       pagina: pageNumber,
-      x: drawing.x / bounds.width,
-      y: drawing.y / bounds.height,
-      ancho: drawing.w / bounds.width,
-      alto: drawing.h / bounds.height,
+      x: r6(drawing.x / bounds.width),
+      y: r6(drawing.y / bounds.height),
+      ancho: r6(drawing.w / bounds.width),
+      alto: r6(drawing.h / bounds.height),
       pixel: {
         left: drawing.x,
         top: drawing.y,
@@ -173,7 +184,7 @@ export default function PdfDocumentView({
         <div
           ref={pageRef}
           className={cn(
-            'relative bg-white shadow-lg',
+            'relative bg-[#fff] shadow-lg',
             drawMode && 'cursor-crosshair',
           )}
           onMouseDown={handleMouseDown}
@@ -191,7 +202,6 @@ export default function PdfDocumentView({
           {/* Overlay de anotaciones (coords normalizadas 0-1) */}
           {pageAnnotations.map((a) => {
             const nota = a.nota_observacion!
-            const pendiente = a.estado === 'PENDIENTE'
             return (
               <button
                 key={a.id}
@@ -200,9 +210,7 @@ export default function PdfDocumentView({
                 onClick={() => onSelect?.(a.id)}
                 className={cn(
                   'absolute rounded-[2px] transition-all',
-                  pendiente
-                    ? 'border-b-2 border-[#FFD700] bg-[rgba(255,222,0,0.3)] hover:bg-[rgba(255,222,0,0.45)]'
-                    : 'border-b-2 border-[#22c55e] bg-[rgba(34,197,94,0.3)] hover:bg-[rgba(34,197,94,0.45)]',
+                  COLOR_ESTADO_OBSERVACION[a.estado] ?? COLOR_ESTADO_OBSERVACION.PENDIENTE,
                   selectedId === a.id &&
                     'ring-2 ring-primary-container ring-offset-1',
                 )}

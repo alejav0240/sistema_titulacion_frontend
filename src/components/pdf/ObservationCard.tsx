@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import {
   useAnnotationHistory,
+  useApelarAnnotation,
   useAprobarAnnotation,
   useDeleteAnnotation,
   useReobservarAnnotation,
@@ -14,6 +15,7 @@ import type { Anotacion, RectNormalizado } from '#/types/annotation'
 const EVENTO_LABELS: Record<string, string> = {
   CREACION: 'Observación creada',
   SUBSANACION: 'Subsanada por el estudiante',
+  APELACION: 'Apelada por el estudiante',
   APROBACION: 'Corrección aprobada',
   REOBSERVACION: 'Observada de nuevo',
 }
@@ -26,9 +28,16 @@ function SeverityBadge({ anotacion }: { anotacion: Anotacion }) {
       </span>
     )
   }
+  if (anotacion.estado === 'APELADA') {
+    return (
+      <span className="rounded bg-[#DBEAFE] px-xs py-[2px] text-[10px] font-bold uppercase tracking-wider text-[#1E40AF]">
+        Apelada
+      </span>
+    )
+  }
   if (anotacion.estado === 'APROBADA') {
     return (
-      <span className="rounded bg-green-600 px-xs py-[2px] text-[10px] font-bold uppercase tracking-wider text-white">
+      <span className="rounded bg-green-600 px-xs py-[2px] text-[10px] font-bold uppercase tracking-wider text-[#fff]">
         Aprobada
       </span>
     )
@@ -48,7 +57,10 @@ export function ObservationCard({
   anotacion,
   isRevisor,
   isOwner,
+  currentUserId,
   selected,
+  checked,
+  onToggleCheck,
   onClick,
   onRequestDraw,
   subsanarDraft,
@@ -57,7 +69,10 @@ export function ObservationCard({
   anotacion: Anotacion
   isRevisor: boolean
   isOwner: boolean
+  currentUserId?: number | null
   selected: boolean
+  checked?: boolean
+  onToggleCheck?: () => void
   onClick: () => void
   onRequestDraw?: () => void
   subsanarDraft?: RectNormalizado
@@ -65,16 +80,22 @@ export function ObservationCard({
 }) {
   const [feedback, setFeedback] = useState('')
   const [subsanando, setSubsanando] = useState(false)
+  const [apelando, setApelando] = useState(false)
   const [comentario, setComentario] = useState('')
+  const [textoApelacion, setTextoApelacion] = useState('')
   const [showHistory, setShowHistory] = useState(false)
 
   const aprobar = useAprobarAnnotation()
   const reobservar = useReobservarAnnotation()
   const subsanar = useSubsanarAnnotation()
+  const apelar = useApelarAnnotation()
   const eliminar = useDeleteAnnotation()
   const historial = useAnnotationHistory(showHistory ? anotacion.id : undefined)
 
   const texto = anotacion.nota_observacion?.comentario ?? ''
+  // Solo el autor de la observación puede aprobarla/reobservarla/eliminarla
+  const isAutor = isRevisor && currentUserId != null && anotacion.autor === currentUserId
+  const resoluble = anotacion.estado === 'SUBSANADA' || anotacion.estado === 'APELADA'
 
   // Auto-expandir historial cuando la anotación fue reobservada:
   // el estudiante necesita ver el motivo del revisor sin tener que buscarlo
@@ -91,18 +112,27 @@ export function ObservationCard({
         'cursor-pointer space-y-sm rounded-lg border bg-surface-container-lowest p-md shadow-sm transition-all',
         anotacion.estado === 'SUBSANADA'
           ? 'border-yellow-300 bg-yellow-50/50'
-          : 'border-outline-variant',
+          : anotacion.estado === 'APELADA'
+            ? 'border-blue-300 bg-blue-50/50'
+            : 'border-outline-variant',
         selected && 'ring-2 ring-primary-container',
       )}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-sm">
-          {anotacion.estado !== 'PENDIENTE' && (
-            <MaterialIcon
-              name="check_box"
-              size={16}
-              className="text-green-600"
+          {isAutor && resoluble && onToggleCheck ? (
+            <input
+              type="checkbox"
+              checked={checked ?? false}
+              onChange={onToggleCheck}
+              onClick={(e) => e.stopPropagation()}
+              className="h-4 w-4 rounded border-outline-variant accent-[#6b1d2f]"
+              title="Seleccionar para aprobación masiva"
             />
+          ) : (
+            anotacion.estado === 'APROBADA' && (
+              <MaterialIcon name="check_box" size={16} className="text-green-600" />
+            )
           )}
           <span className="text-label-sm font-bold text-primary">
             {anotacion.codigo_display}
@@ -125,7 +155,7 @@ export function ObservationCard({
           >
             <MaterialIcon name="history" size={18} />
           </button>
-          {isRevisor && anotacion.estado === 'PENDIENTE' && (
+          {isAutor && anotacion.estado === 'PENDIENTE' && (
             <button
               type="button"
               title="Eliminar observación"
@@ -157,8 +187,8 @@ export function ObservationCard({
             </span>
           </div>
 
-          {/* Acciones del revisor sobre subsanadas */}
-          {isRevisor && anotacion.estado === 'SUBSANADA' && (
+          {/* Acciones del autor sobre subsanadas/apeladas */}
+          {isAutor && resoluble && (
             <div className="flex gap-xs">
               <button
                 type="button"
@@ -167,7 +197,7 @@ export function ObservationCard({
                   aprobar.mutate({ id: anotacion.id, feedback })
                 }}
                 disabled={aprobar.isPending}
-                className="rounded bg-green-600 px-sm py-1 text-[10px] font-bold uppercase text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+                className="rounded bg-green-600 px-sm py-1 text-[10px] font-bold uppercase text-[#fff] transition-colors hover:bg-green-700 disabled:opacity-50"
               >
                 Aprobar
               </button>
@@ -185,18 +215,31 @@ export function ObservationCard({
             </div>
           )}
 
-          {/* Acción del estudiante sobre pendientes */}
-          {isOwner && anotacion.estado === 'PENDIENTE' && !subsanando && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                setSubsanando(true)
-              }}
-              className="rounded bg-primary-container px-sm py-1 text-[10px] font-bold uppercase text-on-primary transition-all hover:opacity-90"
-            >
-              Subsanar
-            </button>
+          {/* Acciones del estudiante sobre pendientes */}
+          {isOwner && anotacion.estado === 'PENDIENTE' && !subsanando && !apelando && (
+            <div className="flex gap-xs">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSubsanando(true)
+                }}
+                className="rounded bg-primary-container px-sm py-1 text-[10px] font-bold uppercase text-on-primary transition-all hover:opacity-90"
+              >
+                Subsanar
+              </button>
+              <button
+                type="button"
+                title="Apelar la observación con un comentario, sin modificar el documento"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setApelando(true)
+                }}
+                className="rounded border border-primary px-sm py-1 text-[10px] font-bold uppercase text-primary transition-colors hover:bg-primary/5"
+              >
+                Apelar
+              </button>
+            </div>
           )}
         </div>
 
@@ -217,7 +260,7 @@ export function ObservationCard({
           </p>
         )}
 
-        {isRevisor && anotacion.estado === 'SUBSANADA' && (
+        {isAutor && resoluble && (
           <input
             type="text"
             value={feedback}
@@ -228,15 +271,57 @@ export function ObservationCard({
           />
         )}
 
+        {apelando && (
+          <div className="flex flex-col gap-sm" onClick={(e) => e.stopPropagation()}>
+            <textarea
+              value={textoApelacion}
+              onChange={(e) => setTextoApelacion(e.target.value)}
+              placeholder="Explica por qué consideras que la observación no aplica o ya está resuelta..."
+              rows={2}
+              className="w-full rounded-md border border-outline-variant px-sm py-1.5 text-body-sm focus:border-primary focus:ring-primary"
+            />
+            <div className="flex justify-end gap-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setApelando(false)
+                  setTextoApelacion('')
+                }}
+                className="px-sm py-1 text-[10px] font-bold uppercase text-secondary"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={!textoApelacion.trim() || apelar.isPending}
+                onClick={() =>
+                  apelar.mutate(
+                    { id: anotacion.id, texto: textoApelacion.trim() },
+                    {
+                      onSuccess: () => {
+                        setApelando(false)
+                        setTextoApelacion('')
+                      },
+                    },
+                  )
+                }
+                className="rounded bg-primary px-sm py-1 text-[10px] font-bold uppercase text-[#fff] hover:brightness-110 disabled:opacity-50"
+              >
+                {apelar.isPending ? 'Enviando…' : 'Apelar'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {subsanando && (
           <div
             className="flex flex-col gap-sm"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Selector de área en el documento */}
+            {/* Selector de área en la versión nueva del documento */}
             {subsanarDraft ? (
               <div className="flex items-center gap-sm">
-                <span className="flex items-center gap-xs rounded-full bg-green-100 px-sm py-1 text-[10px] font-bold text-green-700">
+                <span className="flex items-center gap-xs rounded-full bg-emerald-100 px-sm py-1 text-[10px] font-bold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
                   <MaterialIcon name="check_circle" size={12} />
                   Área marcada
                 </span>
@@ -255,7 +340,7 @@ export function ObservationCard({
                 className="flex items-center justify-center gap-xs rounded-lg border-2 border-dashed border-primary/40 py-sm text-label-sm text-primary transition-colors hover:border-primary hover:bg-primary/5"
               >
                 <MaterialIcon name="draw" size={16} />
-                Dibujar en documento
+                Dibujar en la versión nueva
               </button>
             )}
 
@@ -266,7 +351,7 @@ export function ObservationCard({
               placeholder={
                 subsanarDraft
                   ? 'Describe cómo corregiste esta observación...'
-                  : 'Marca el área en el documento primero'
+                  : 'Marca el área en la versión nueva primero'
               }
               rows={2}
               className="w-full rounded-md border border-outline-variant px-sm py-1.5 text-body-sm focus:border-primary focus:ring-primary disabled:bg-surface-container disabled:opacity-50"
@@ -303,9 +388,9 @@ export function ObservationCard({
                     },
                   )
                 }}
-                className="rounded bg-amber-500 px-sm py-1 text-[10px] font-bold uppercase text-white hover:bg-amber-600 disabled:opacity-50"
+                className="rounded bg-primary px-sm py-1 text-[10px] font-bold uppercase text-[#fff] hover:brightness-110 disabled:opacity-50"
               >
-                {subsanar.isPending ? 'Enviando…' : 'Confirmar'}
+                {subsanar.isPending ? 'Enviando…' : 'Confirmar subsanación'}
               </button>
             </div>
           </div>

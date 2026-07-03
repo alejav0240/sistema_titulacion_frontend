@@ -53,6 +53,7 @@ export interface Proyecto {
   estudiante_email: string
   estado: EstadoProyecto
   etapa: Etapa
+  estado_aprobacion: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO'
   motivo_rechazo: string
   estado_revision: EstadoRevision
   ultima_version: VersionResumen | null
@@ -75,6 +76,13 @@ export interface Version {
   estado: EstadoVersion
   revisada_por_nombre: string | null
   revisada_el: string | null
+  revisiones: Array<{
+    revisor_id: number
+    revisor_nombre: string
+    rol_revision: 'TUTOR' | 'TRIBUNAL'
+    estado: 'PENDIENTE' | 'APROBADO' | 'OBSERVADO'
+    actualizado_el: string
+  }>
   anotaciones_pendientes: number
   anotaciones_total: number
   created_at: string

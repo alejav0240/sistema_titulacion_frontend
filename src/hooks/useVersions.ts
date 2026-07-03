@@ -3,6 +3,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import api from '#/lib/api'
 import type { Version } from '#/types/project'
 
@@ -97,6 +98,12 @@ export function useReviewVersion() {
       qc.invalidateQueries({ queryKey: ['versions'] })
       qc.invalidateQueries({ queryKey: ['projects'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+    onError: (err: unknown) => {
+      const detail =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail ?? 'No se pudo procesar la revisión.'
+      toast.error(detail)
     },
   })
 }

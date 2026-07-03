@@ -66,19 +66,12 @@ function RevisionIndexPage() {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Centro — placeholder */}
-        <div className="flex flex-1 items-center justify-center text-body-lg text-outline">
-          <div className="flex flex-col items-center gap-md text-center">
-            <MaterialIcon name="picture_as_pdf" size={48} className="text-outline/40" />
-            <p>Selecciona una versión para ver el documento</p>
-          </div>
-        </div>
-
-        {/* Panel lateral — todas las observaciones agrupadas por versión */}
-        <aside className="w-[360px] shrink-0 overflow-y-auto border-l border-outline-variant p-md">
-          <p className="mb-md text-label-sm font-bold uppercase tracking-wider text-outline">
+        {/* Panel izquierdo — todas las observaciones agrupadas por versión,
+            mismo estilo que el panel del visor por versión */}
+        <aside className="thin-scrollbar flex w-[35%] min-w-[320px] flex-col overflow-y-auto border-r border-outline-variant bg-white/60 p-lg backdrop-blur-md">
+          <h2 className="mb-md text-label-md uppercase tracking-wider text-secondary">
             Historial de observaciones
-          </p>
+          </h2>
           {anotaciones.isLoading && (
             <p className="text-body-sm text-outline">Cargando…</p>
           )}
@@ -93,9 +86,19 @@ function RevisionIndexPage() {
               </div>
             ))}
           {!anotaciones.isLoading && (anotaciones.data ?? []).length === 0 && (
-            <p className="text-body-sm text-outline">Sin observaciones registradas.</p>
+            <p className="rounded-lg border border-dashed border-outline-variant p-lg text-center text-body-sm text-outline">
+              Sin observaciones registradas.
+            </p>
           )}
         </aside>
+
+        {/* Centro — placeholder */}
+        <div className="flex flex-1 items-center justify-center bg-[#f1f1f1] text-body-lg text-outline">
+          <div className="flex flex-col items-center gap-md text-center">
+            <MaterialIcon name="picture_as_pdf" size={48} className="text-outline/40" />
+            <p>Selecciona una versión para ver el documento</p>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -3,6 +3,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import api from '#/lib/api'
 import type {
   Anotacion,
@@ -35,6 +36,12 @@ function useAnnotationMutation<TVars>(
       qc.invalidateQueries({ queryKey: ['versions'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       qc.invalidateQueries({ queryKey: ['annotation-history'] })
+    },
+    onError: (err: unknown) => {
+      const detail =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail ?? 'No se pudo completar la acción.'
+      toast.error(detail)
     },
   })
 }
@@ -102,6 +109,28 @@ export function useReobservarAnnotation() {
       return data
     },
   )
+}
+
+export function useApelarAnnotation() {
+  return useAnnotationMutation(
+    async ({ id, texto }: { id: number; texto: string }) => {
+      const { data } = await api.post<Anotacion>(
+        `/api/annotations/${id}/apelar/`,
+        { texto },
+      )
+      return data
+    },
+  )
+}
+
+export function useAprobarMasivo() {
+  return useAnnotationMutation(async (ids: number[]) => {
+    const { data } = await api.post<{ aprobadas: number }>(
+      '/api/annotations/aprobar-masivo/',
+      { ids },
+    )
+    return data
+  })
 }
 
 export function useAnnotationHistory(id: number | undefined) {

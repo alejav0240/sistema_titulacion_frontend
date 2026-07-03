@@ -5,7 +5,6 @@ import { initials } from '#/components/layout/Topbar'
 import { cn } from '#/lib/utils'
 import type { Severidad } from '#/types/annotation'
 
-/** Popover estilo Figma para crear una observación sobre el rect dibujado. */
 export function CommentPopover({
   position,
   onSubmit,
@@ -13,12 +12,13 @@ export function CommentPopover({
   pending = false,
 }: {
   position: { left: number; top: number }
-  onSubmit: (payload: { comentario: string; severidad: Severidad }) => void
+  onSubmit: (payload: { comentario: string; severidad: Severidad; accion_a_realizar: string }) => void
   onCancel: () => void
   pending?: boolean
 }) {
   const user = useStore(authStore, (s) => s.user)
   const [comentario, setComentario] = useState('')
+  const [accion, setAccion] = useState('')
   const [severidad, setSeveridad] = useState<Severidad>('CRITICO')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -27,9 +27,11 @@ export function CommentPopover({
     return () => clearTimeout(id)
   }, [])
 
+  const canSubmit = comentario.trim() && accion.trim() && !pending
+
   return (
     <div
-      className="absolute z-50 w-[280px] rounded-xl border border-outline-variant bg-white p-md shadow-2xl"
+      className="absolute z-50 w-[300px] rounded-xl border border-outline-variant bg-white p-md shadow-2xl"
       style={{ left: position.left, top: position.top }}
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -39,15 +41,38 @@ export function CommentPopover({
         </div>
         <span className="text-label-md font-bold">{user?.nombre}</span>
       </div>
-      <textarea
-        ref={textareaRef}
-        value={comentario}
-        onChange={(e) => setComentario(e.target.value)}
-        placeholder="Añade un comentario sobre este cambio..."
-        rows={3}
-        className="w-full resize-none border-none p-0 text-body-sm outline-none placeholder:text-outline focus:ring-0"
-      />
-      <div className="mt-sm flex gap-sm">
+
+      {/* Campo 1: Observación */}
+      <div className="mb-sm">
+        <label className="mb-xs block text-[10px] font-bold uppercase tracking-wider text-outline">
+          Observación <span className="text-error">*</span>
+        </label>
+        <textarea
+          ref={textareaRef}
+          value={comentario}
+          onChange={(e) => setComentario(e.target.value)}
+          placeholder="Describe el problema encontrado..."
+          rows={2}
+          className="w-full resize-none border-none p-0 text-body-sm outline-none placeholder:text-outline focus:ring-0"
+        />
+      </div>
+
+      {/* Campo 2: Acción a realizar */}
+      <div className="mb-sm border-t border-outline-variant/50 pt-sm">
+        <label className="mb-xs block text-[10px] font-bold uppercase tracking-wider text-outline">
+          Acción a realizar <span className="text-error">*</span>
+        </label>
+        <textarea
+          value={accion}
+          onChange={(e) => setAccion(e.target.value)}
+          placeholder="Indica qué debe corregir el estudiante..."
+          rows={2}
+          className="w-full resize-none border-none p-0 text-body-sm outline-none placeholder:text-outline focus:ring-0"
+        />
+      </div>
+
+      {/* Severidad */}
+      <div className="flex gap-sm">
         {(
           [
             ['CRITICO', 'Crítico'],
@@ -72,6 +97,7 @@ export function CommentPopover({
           </button>
         ))}
       </div>
+
       <div className="mt-md flex justify-end gap-sm">
         <button
           type="button"
@@ -82,9 +108,15 @@ export function CommentPopover({
         </button>
         <button
           type="button"
-          disabled={!comentario.trim() || pending}
-          onClick={() => onSubmit({ comentario: comentario.trim(), severidad })}
-          className="rounded-lg bg-primary px-md py-sm text-label-sm font-bold text-white disabled:opacity-50"
+          disabled={!canSubmit}
+          onClick={() =>
+            onSubmit({
+              comentario: comentario.trim(),
+              severidad,
+              accion_a_realizar: accion.trim(),
+            })
+          }
+          className="rounded-lg bg-primary px-md py-sm text-label-sm font-bold text-[#fff] disabled:opacity-50"
         >
           {pending ? 'Guardando…' : 'Comentar'}
         </button>

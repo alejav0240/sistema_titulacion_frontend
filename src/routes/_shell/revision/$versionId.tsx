@@ -4,6 +4,8 @@ import { useStore } from '@tanstack/react-store'
 import { z } from 'zod'
 import { CommentPopover } from '#/components/pdf/CommentPopover'
 import { ObservationsPanel } from '#/components/pdf/ObservationsPanel'
+import { RevisionBreakdown } from '#/components/projects/RevisionRow'
+import { NuevaVersionModal } from '#/components/projects/NuevaVersionModal'
 import { PdfViewer } from '#/components/pdf/PdfViewer'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import { NotificationsDropdown } from '#/components/notifications/NotificationsDropdown'
@@ -23,15 +25,17 @@ import type { Anotacion, RectNormalizado } from '#/types/annotation'
 export const Route = createFileRoute('/_shell/revision/$versionId')({
   validateSearch: z.object({
     compare: z.coerce.number().optional(),
+    panel: z.coerce.number().optional(),
   }),
   component: RevisionPage,
 })
 
 function RevisionPage() {
   const { versionId } = Route.useParams()
-  const { compare } = Route.useSearch()
+  const { compare, panel } = Route.useSearch()
   const navigate = useNavigate()
   const user = useStore(authStore, (s) => s.user)
+  const soloObservaciones = Boolean(panel)
 
   const id = Number(versionId)
   const version = useVersion(id)
@@ -41,8 +45,10 @@ function RevisionPage() {
   const createAnnotation = useCreateAnnotation()
   const review = useReviewVersion()
 
-  const [page, setPage] = useState(1)
-  const [numPages, setNumPages] = useState(0)
+  const [pageLeft, setPageLeft] = useState(1)
+  const [pageRight, setPageRight] = useState(1)
+  const [numPagesLeft, setNumPagesLeft] = useState(0)
+  const [numPagesRight, setNumPagesRight] = useState(0)
   const [scale, setScale] = useState(1)
   const [drawMode, setDrawMode] = useState(false)
   const [draft, setDraft] = useState<RectNormalizado | null>(null)
@@ -51,6 +57,8 @@ function RevisionPage() {
   const [subsanarDraft, setSubsanarDraft] = useState<
     (RectNormalizado & { targetId: number }) | null
   >(null)
+  const [pendingSubsanarId, setPendingSubsanarId] = useState<number | null>(null)
+  const [nuevaVersionOpen, setNuevaVersionOpen] = useState(false)
 
   // Limpiar subsanarDraft si la anotación objetivo ya no está pendiente
   useEffect(() => {
@@ -64,11 +72,42 @@ function RevisionPage() {
 
   const isRevisor = user?.rol !== 'ESTUDIANTE'
   const isOwner = user?.rol === 'ESTUDIANTE'
+  const isMiembroRevision = (version.data?.revisiones ?? []).some(
+    (r) => r.revisor_id === user?.id,
+  )
+  const puedeAprobar =
+    ['DIRECTOR', 'DTC'].includes(user?.rol ?? '') || isMiembroRevision
   const compareVersion = versions.data?.find((v) => v.id === compare)
+
+  // La corrección siempre se dibuja en la versión más nueva, nunca en el
+  // documento donde se anotó la observación original.
+  const maxNumeroVersion = Math.max(
+    0,
+    ...(versions.data ?? []).map((v) => v.numero_version),
+  )
+  const ultimaVersion = (versions.data ?? []).find(
+    (v) => v.numero_version === maxNumeroVersion,
+  )
+
+  const iniciarSubsanacion = (annotationId: number) => {
+    const actual = version.data?.numero_version ?? 0
+    if (actual >= maxNumeroVersion) {
+      // No existe todavía una versión más nueva: hay que subirla primero.
+      setPendingSubsanarId(annotationId)
+      setNuevaVersionOpen(true)
+      return
+    }
+    if (ultimaVersion && compare !== ultimaVersion.id) {
+      navigate({ to: '.', search: { compare: ultimaVersion.id }, replace: true })
+    }
+    setSubsanarTarget(annotationId)
+    setSubsanarDraft(null)
+    setDrawMode(true)
+  }
 
   const handleSelect = (anotacion: Anotacion) => {
     setSelectedId(anotacion.id)
-    if (anotacion.nota_observacion) setPage(anotacion.nota_observacion.pagina)
+    if (anotacion.nota_observacion) setPageLeft(anotacion.nota_observacion.pagina)
   }
 
   const toggleCompare = () => {
@@ -103,13 +142,24 @@ function RevisionPage() {
             {compare ? 'Salir de comparación' : 'Comparar versiones'}
           </button>
 
-          {isRevisor && version.data?.estado === 'EN REVISION' && (
+          {isOwner && (
+            <button
+              type="button"
+              onClick={() => setNuevaVersionOpen(true)}
+              className="flex items-center gap-xs rounded-lg bg-primary px-md py-sm text-label-md font-bold text-[#fff] transition-all hover:brightness-110"
+            >
+              <MaterialIcon name="upload_file" size={18} />
+              Subir versión
+            </button>
+          )}
+
+          {puedeAprobar && version.data?.estado === 'EN REVISION' && (
             <div className="flex items-center gap-xs">
               <button
                 type="button"
                 onClick={() => review.mutate({ versionId: id, accion: 'APROBAR' })}
                 disabled={review.isPending}
-                className="rounded-lg bg-green-600 px-md py-sm text-label-sm font-bold uppercase text-white hover:bg-green-700 disabled:opacity-50"
+                className="rounded-lg bg-green-600 px-md py-sm text-label-sm font-bold uppercase text-[#fff] hover:bg-green-700 disabled:opacity-50"
               >
                 Aprobar versión
               </button>
@@ -187,26 +237,42 @@ function RevisionPage() {
         </div>
       </header>
 
+      {(version.data?.revisiones ?? []).length > 0 && (
+        <div className="border-b border-outline-variant bg-surface-container-lowest px-container-margin py-sm">
+          <RevisionBreakdown revisiones={version.data?.revisiones ?? []} />
+        </div>
+      )}
+
       {/* Área de contenido: panel observaciones + PDF */}
       <div className="flex flex-1 overflow-hidden">
         <ObservationsPanel
           annotations={annotations.data ?? []}
           isRevisor={isRevisor}
           isOwner={isOwner}
+          currentUserId={user?.id ?? null}
           selectedId={selectedId}
           onSelect={handleSelect}
-          onSubsanarDraw={(id) => {
-            setSubsanarTarget(id)
-            setSubsanarDraft(null)
-            setDrawMode(true)
-          }}
+          onSubsanarDraw={iniciarSubsanacion}
           subsanarDraft={subsanarDraft}
           onSubsanarReset={() => {
             setSubsanarDraft(null)
             setSubsanarTarget(null)
+            setPendingSubsanarId(null)
           }}
         />
 
+        {soloObservaciones ? (
+          <div className="flex flex-1 items-center justify-center bg-[#f1f1f1] p-lg text-body-sm text-outline">
+            <button
+              type="button"
+              onClick={() => navigate({ to: '.', search: { ...(compare && { compare }) }, replace: true })}
+              className="flex items-center gap-xs rounded-lg border border-outline-variant bg-white px-md py-sm text-label-md text-primary hover:bg-surface-container-low"
+            >
+              <MaterialIcon name="visibility" size={18} />
+              Ver el documento
+            </button>
+          </div>
+        ) : (
         <section className="relative flex w-[65%] flex-1 flex-col overflow-hidden bg-[#f1f1f1] p-lg">
           <div
             className={cn(
@@ -223,33 +289,46 @@ function RevisionPage() {
               )}
               <PdfViewer
                 fileUrl={versionPdfUrl(id)}
-                pageNumber={page}
+                pageNumber={pageLeft}
                 scale={scale}
                 annotations={annotations.data ?? []}
                 selectedId={selectedId}
                 onSelect={(annotationId) => setSelectedId(annotationId)}
-                drawMode={drawMode}
+                drawMode={drawMode && subsanarTarget === null}
                 onDrawComplete={({ pagina, x, y, ancho, alto }) => {
-                  if (subsanarTarget !== null) {
-                    setSubsanarDraft({ targetId: subsanarTarget, pagina, x, y, ancho, alto })
-                    setSubsanarTarget(null)
-                    setDrawMode(false)
-                  } else {
-                    setDraft({ pagina, x, y, ancho, alto })
-                    setDrawMode(false)
-                  }
+                  setDraft({ pagina, x, y, ancho, alto })
+                  setDrawMode(false)
                 }}
-                onLoaded={setNumPages}
+                onLoaded={setNumPagesLeft}
               />
+              <PageNav page={pageLeft} setPage={setPageLeft} numPages={numPagesLeft} />
+              {/* Cancelar dibujo de observación nueva */}
+              {drawMode && subsanarTarget === null && (
+                <div className="absolute left-1/2 top-lg z-10 flex -translate-x-1/2 items-center gap-sm rounded-full border border-outline-variant bg-white/95 px-md py-sm shadow-md">
+                  <span className="text-label-sm text-on-surface-variant">
+                    Dibuja un rectángulo sobre el documento
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setDrawMode(false)}
+                    className="rounded-full bg-error-container px-sm py-[2px] text-[10px] font-bold uppercase text-on-error-container hover:brightness-95"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
               {/* FAB añadir observación */}
               {isRevisor && (
                 <div className="absolute right-xl top-xl z-10">
                   <button
                     type="button"
-                    onClick={() => setDrawMode(!drawMode)}
+                    onClick={() => {
+                      setSubsanarTarget(null)
+                      setDrawMode(!drawMode)
+                    }}
                     className={cn(
                       'group relative flex h-12 w-12 items-center justify-center rounded-full border border-outline-variant shadow-lg transition-colors',
-                      drawMode
+                      drawMode && subsanarTarget === null
                         ? 'bg-primary-container text-on-primary'
                         : 'bg-white text-primary hover:bg-surface-container-low',
                     )}
@@ -274,37 +353,40 @@ function RevisionPage() {
                 </p>
                 <PdfViewer
                   fileUrl={versionPdfUrl(compare)}
-                  pageNumber={page}
+                  pageNumber={pageRight}
                   scale={scale}
                   annotations={compareAnnotations.data ?? []}
+                  drawMode={drawMode && subsanarTarget !== null}
+                  onDrawComplete={({ pagina, x, y, ancho, alto }) => {
+                    if (subsanarTarget !== null) {
+                      setSubsanarDraft({ targetId: subsanarTarget, pagina, x, y, ancho, alto })
+                      setSubsanarTarget(null)
+                      setDrawMode(false)
+                    }
+                  }}
+                  onLoaded={setNumPagesRight}
                 />
+                <PageNav page={pageRight} setPage={setPageRight} numPages={numPagesRight} />
+                {/* Cancelar dibujo de subsanación */}
+                {drawMode && subsanarTarget !== null && (
+                  <div className="absolute left-1/2 top-lg z-10 flex -translate-x-1/2 items-center gap-sm rounded-full border border-outline-variant bg-white/95 px-md py-sm shadow-md">
+                    <span className="text-label-sm text-on-surface-variant">
+                      Dibuja la corrección en esta versión
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDrawMode(false)
+                        setSubsanarTarget(null)
+                      }}
+                      className="rounded-full bg-error-container px-sm py-[2px] text-[10px] font-bold uppercase text-on-error-container hover:brightness-95"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
               </div>
             )}
-          </div>
-
-          {/* Paginación flotante */}
-          <div className="absolute bottom-lg left-1/2 z-10 flex -translate-x-1/2 items-center gap-md rounded-full border border-outline-variant bg-white/90 px-lg py-sm shadow-md backdrop-blur">
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="rounded-full p-xs transition-colors hover:bg-surface-container-low disabled:opacity-40"
-              aria-label="Página anterior"
-            >
-              <MaterialIcon name="chevron_left" size={20} />
-            </button>
-            <span className="text-label-md text-on-surface-variant">
-              Página {page} de {numPages || '…'}
-            </span>
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.min(numPages || p, p + 1))}
-              disabled={numPages > 0 && page >= numPages}
-              className="rounded-full p-xs transition-colors hover:bg-surface-container-low disabled:opacity-40"
-              aria-label="Página siguiente"
-            >
-              <MaterialIcon name="chevron_right" size={20} />
-            </button>
           </div>
 
           {/* Popover de comentario (estilo Figma) */}
@@ -314,9 +396,9 @@ function RevisionPage() {
                 position={{ left: 0, top: 0 }}
                 pending={createAnnotation.isPending}
                 onCancel={() => setDraft(null)}
-                onSubmit={({ comentario, severidad }) => {
+                onSubmit={({ comentario, severidad, accion_a_realizar }) => {
                   createAnnotation.mutate(
-                    { versionId: id, ...draft, comentario, severidad },
+                    { versionId: id, ...draft, comentario, severidad, accion_a_realizar },
                     { onSuccess: () => setDraft(null) },
                   )
                 }}
@@ -324,7 +406,94 @@ function RevisionPage() {
             </div>
           )}
         </section>
+        )}
       </div>
+
+      <NuevaVersionModal
+        open={nuevaVersionOpen}
+        onClose={() => {
+          setNuevaVersionOpen(false)
+          setPendingSubsanarId(null)
+        }}
+        projectId={version.data?.proyecto}
+        nextVersion={maxNumeroVersion + 1}
+        onCreated={(newVersionId) => {
+          setNuevaVersionOpen(false)
+          if (pendingSubsanarId !== null) {
+            // Retoma la subsanación pendiente, ahora sobre la versión recién creada.
+            navigate({ to: '.', search: { compare: newVersionId }, replace: true })
+            setSubsanarTarget(pendingSubsanarId)
+            setSubsanarDraft(null)
+            setDrawMode(true)
+            setPendingSubsanarId(null)
+          } else {
+            // Subida manual desde el botón "Subir versión": ir directo a verla.
+            navigate({
+              to: '/revision/$versionId',
+              params: { versionId: String(newVersionId) },
+              search: {},
+            })
+          }
+        }}
+      />
+    </div>
+  )
+}
+
+/** Controles de paginación por panel: prev/next + salto directo a página. */
+function PageNav({
+  page,
+  setPage,
+  numPages,
+}: {
+  page: number
+  setPage: (updater: (p: number) => number) => void
+  numPages: number
+}) {
+  const [goTo, setGoTo] = useState('')
+
+  return (
+    <div className="absolute bottom-sm left-1/2 z-10 flex -translate-x-1/2 items-center gap-sm rounded-full border border-outline-variant bg-white/90 px-md py-xs shadow-md backdrop-blur">
+      <button
+        type="button"
+        onClick={() => setPage((p) => Math.max(1, p - 1))}
+        disabled={page <= 1}
+        className="rounded-full p-xs transition-colors hover:bg-surface-container-low disabled:opacity-40"
+        aria-label="Página anterior"
+      >
+        <MaterialIcon name="chevron_left" size={18} />
+      </button>
+      <span className="text-label-sm text-on-surface-variant">
+        Página {page} de {numPages || '…'}
+      </span>
+      <button
+        type="button"
+        onClick={() => setPage((p) => Math.min(numPages || p, p + 1))}
+        disabled={numPages > 0 && page >= numPages}
+        className="rounded-full p-xs transition-colors hover:bg-surface-container-low disabled:opacity-40"
+        aria-label="Página siguiente"
+      >
+        <MaterialIcon name="chevron_right" size={18} />
+      </button>
+      <form
+        className="ml-xs flex items-center gap-xs border-l border-outline-variant pl-xs"
+        onSubmit={(e) => {
+          e.preventDefault()
+          const n = Number(goTo)
+          if (n >= 1 && (!numPages || n <= numPages)) setPage(() => n)
+          setGoTo('')
+        }}
+      >
+        <input
+          type="number"
+          min={1}
+          max={numPages || undefined}
+          value={goTo}
+          onChange={(e) => setGoTo(e.target.value)}
+          placeholder="Ir a…"
+          className="w-14 rounded border border-outline-variant bg-transparent px-xs py-[2px] text-[11px] outline-none focus:border-primary"
+        />
+      </form>
     </div>
   )
 }
