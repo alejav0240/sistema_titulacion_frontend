@@ -25,7 +25,7 @@ export function AppShell({
         {!hideTopbar && <Topbar />}
         <main
           className={cn(
-            'thin-scrollbar flex flex-1 flex-col overflow-y-auto bg-[#FAFAFA]',
+            'thin-scrollbar flex flex-1 flex-col overflow-y-auto bg-background',
             !noPadding && 'block space-y-xl p-container-margin',
           )}
         >

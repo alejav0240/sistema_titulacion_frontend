@@ -39,7 +39,7 @@ function RouteComponent() {
   })()
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#FAFAFA] p-container-margin text-on-surface">
+    <main className="flex min-h-screen items-center justify-center bg-background p-container-margin text-on-surface">
       <div className="w-full max-w-[440px]">
         <div className="mb-xl flex items-center gap-sm">
           <MaterialIcon name="school" fill size={32} className="text-primary" />

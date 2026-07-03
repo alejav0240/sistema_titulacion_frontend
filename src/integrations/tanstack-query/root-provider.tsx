@@ -18,6 +18,12 @@ function extractError(error: unknown): string {
 
 export function getContext() {
   const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 30_000,
+        retry: 1,
+      },
+    },
     mutationCache: new MutationCache({
       onError: (error, _variables, _context, mutation) => {
         // Mutaciones que muestran su propio error inline pueden silenciar el toast

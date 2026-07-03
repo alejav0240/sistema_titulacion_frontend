@@ -45,13 +45,6 @@ const DONUT_LABELS: Record<string, string> = {
   BORRADOR: 'Borradores',
 }
 
-const ACTIVIDAD_LABELS: Record<string, string> = {
-  CREACION: 'creó observación en',
-  SUBSANACION: 'subsanó observación en',
-  APROBACION: 'aprobó corrección en',
-  REOBSERVACION: 'reobservó en',
-}
-
 function DirectorDashboard() {
   const user = useStore(authStore, (s) => s.user)
   const dashboard = useDirectorDashboard()
@@ -319,10 +312,7 @@ function DirectorDashboard() {
                   <div className="min-w-0">
                     <p className="text-body-sm text-on-surface">
                       <span className="font-bold">{item.autor}</span>{' '}
-                      {ACTIVIDAD_LABELS[item.tipo] ?? item.tipo}{' '}
-                      <span className="font-medium text-primary">
-                        {item.proyecto}
-                      </span>
+                      <span className="text-on-surface-variant">{item.proyecto}</span>
                     </p>
                     <p className="text-label-sm text-outline">
                       {timeAgo(item.created_at)}

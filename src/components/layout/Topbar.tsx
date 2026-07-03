@@ -5,6 +5,7 @@ import { authStore } from '#/hooks/useAuthStore'
 import { useLogout } from '#/hooks/auth/useAuth'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import { NotificationsDropdown } from '#/components/notifications/NotificationsDropdown'
+import { ThemeToggle } from '#/components/ui/ThemeToggle'
 import { ROL_LABELS } from '#/lib/roles'
 
 const SECTION_LABELS: Array<[string, string]> = [
@@ -90,6 +91,7 @@ export function Topbar() {
         </form>
       </div>
       <div className="flex items-center gap-md">
+        <ThemeToggle />
         <NotificationsDropdown />
         <div ref={menuRef} className="relative border-l border-outline-variant pl-md">
           <button

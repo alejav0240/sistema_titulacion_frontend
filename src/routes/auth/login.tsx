@@ -7,6 +7,7 @@ import { useCheckSession } from '#/hooks/auth/useSession'
 import { authStore, initAuth } from '#/hooks/useAuthStore'
 import { homeForRole } from '#/lib/roles'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
+import { ThemeToggle } from '#/components/ui/ThemeToggle'
 
 const schema = z.object({
   email: z
@@ -57,23 +58,24 @@ function RouteComponent() {
   }, [session.data])
 
   return (
-    <main className="grid min-h-screen grid-cols-1 overflow-hidden text-on-surface lg:grid-cols-2">
+    <main className="relative grid min-h-screen grid-cols-1 overflow-hidden text-on-surface lg:grid-cols-2">
+      <ThemeToggle className="absolute right-md top-md z-20" />
       {/* Left: Illustration / Branding */}
-      <section className="relative hidden flex-col items-center justify-center overflow-hidden bg-primary p-xl lg:flex">
+      <section className="relative hidden flex-col items-center justify-center overflow-hidden bg-primary-container p-xl lg:flex">
         <div className="absolute inset-0 z-0">
           <img
             alt=""
             className="h-full w-full object-cover opacity-25"
             src="/login-illustration.png"
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-tertiary/90" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-container/95 via-primary-container/85 to-tertiary/90" />
         </div>
         <div className="relative z-10 w-full max-w-[32rem] text-center">
           <div className="mb-md flex justify-center">
-            <MaterialIcon name="school" fill size={64} className="text-white" />
+            <MaterialIcon name="school" fill size={64} className="text-[#fff]" />
           </div>
-          <h1 className="mb-sm text-display-lg text-white">AcademicFlow</h1>
-          <p className="px-lg text-body-lg text-white/85">
+          <h1 className="mb-sm text-display-lg text-[#fff]">AcademicFlow</h1>
+          <p className="px-lg text-body-lg text-[#fff]/85">
             Sistema Inteligente de Gestión y Revisión de Proyectos de Grado.
           </p>
           <div className="glass-card mx-auto mt-xl flex max-w-[24rem] items-center gap-md rounded-xl p-md text-left shadow-lg">
@@ -101,7 +103,7 @@ function RouteComponent() {
       </section>
 
       {/* Right: Login Form */}
-      <section className="flex flex-col items-center justify-center bg-[#FAFAFA] p-container-margin">
+      <section className="flex flex-col items-center justify-center bg-background p-container-margin">
         <div className="w-full max-w-[440px]">
           {/* Mobile branding */}
           <div className="mb-xl flex items-center gap-sm lg:hidden">
@@ -274,7 +276,7 @@ function RouteComponent() {
               <span className="w-full border-t border-outline-variant" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-[#FAFAFA] px-md text-label-sm uppercase text-outline">
+              <span className="bg-background px-md text-label-sm uppercase text-outline">
                 Acceso Restringido
               </span>
             </div>

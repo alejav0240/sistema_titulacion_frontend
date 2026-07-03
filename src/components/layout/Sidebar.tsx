@@ -2,6 +2,7 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { authStore } from '#/hooks/useAuthStore'
 import { useLogout } from '#/hooks/auth/useAuth'
+import { useActiveProject } from '#/hooks/useProjects'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import { cn } from '#/lib/utils'
 import type { Rol } from '#/types/user'
@@ -11,20 +12,40 @@ interface NavItem {
   icon: string
   to: string
   roles?: Rol[]
+  exact?: boolean
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', icon: 'dashboard', to: '/student', roles: ['ESTUDIANTE'] },
+  { label: 'Dashboard', icon: 'dashboard', to: '/student', roles: ['ESTUDIANTE'], exact: true },
   {
     label: 'Dashboard',
     icon: 'dashboard',
     to: '/docente',
     roles: ['DOCENTE', 'TUTOR', 'TRIBUNAL'],
+    exact: true,
   },
-  { label: 'Dashboard', icon: 'dashboard', to: '/admin', roles: ['DIRECTOR', 'DTC'] },
-  { label: 'Proyectos', icon: 'folder_open', to: '/proyectos' },
+  { label: 'Dashboard', icon: 'dashboard', to: '/admin', roles: ['DIRECTOR', 'DTC'], exact: true },
+  { label: 'Proyectos', icon: 'folder_open', to: '/proyectos', roles: ['DIRECTOR', 'DTC'] },
   {
-    label: 'Usuarios',
+    label: 'Materias',
+    icon: 'school',
+    to: '/docente/materias',
+    roles: ['DOCENTE', 'TUTOR', 'TRIBUNAL'],
+  },
+  {
+    label: 'Tutorados',
+    icon: 'supervisor_account',
+    to: '/docente/tutorados',
+    roles: ['TUTOR'],
+  },
+  {
+    label: 'Tribunados',
+    icon: 'gavel',
+    to: '/docente/tribunados',
+    roles: ['TRIBUNAL'],
+  },
+  {
+    label: 'Docentes',
     icon: 'group',
     to: '/admin/usuarios',
     roles: ['DIRECTOR', 'DTC'],
@@ -33,6 +54,12 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Gestión de Materias',
     icon: 'school',
     to: '/admin/materias',
+    roles: ['DIRECTOR', 'DTC'],
+  },
+  {
+    label: 'Grupos',
+    icon: 'category',
+    to: '/admin/grupos',
     roles: ['DIRECTOR', 'DTC'],
   },
   { label: 'Cronograma', icon: 'calendar_today', to: '/cronograma' },
@@ -46,15 +73,8 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 function ctaForRole(rol?: string): { label: string; to: string } | null {
-  switch (rol) {
-    case 'ESTUDIANTE':
-      return { label: 'Nueva Entrega', to: '/student?nueva=1' }
-    case 'DIRECTOR':
-    case 'DTC':
-      return { label: 'Agregar Usuario', to: '/admin/usuarios?crear=1' }
-    default:
-      return null
-  }
+  if (rol === 'ESTUDIANTE') return { label: 'Nueva Entrega', to: '/student?nueva=1' }
+  return null
 }
 
 export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
@@ -63,10 +83,25 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const rol = user?.rol as Rol | undefined
 
-  const items = NAV_ITEMS.filter(
+  const isStudent = rol === 'ESTUDIANTE'
+  const activeProject = useActiveProject()
+  const proyecto = isStudent ? activeProject.data?.project : null
+  const proyectoAprobado = proyecto?.estado_aprobacion === 'APROBADO'
+
+  let items = NAV_ITEMS.filter(
     (item) => !item.roles || (rol && item.roles.includes(rol)),
   )
-  const cta = ctaForRole(rol)
+  if (isStudent) {
+    // App bloqueada hasta que la propuesta sea aprobada por el docente de materia
+    items = proyectoAprobado
+      ? [
+          items[0],
+          { label: 'Mi proyecto', icon: 'folder_open', to: `/proyectos/${proyecto.id}` },
+          ...items.slice(1),
+        ]
+      : items.filter((i) => i.to === '/student' || i.to === '/notificaciones')
+  }
+  const cta = isStudent && !proyectoAprobado ? null : ctaForRole(rol)
 
   return (
     <aside
@@ -78,7 +113,7 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
       {/* Logo */}
       <Link to="/" className="mb-xl flex items-center gap-sm">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-container">
-          <MaterialIcon name="school" fill className="text-white" size={22} />
+          <MaterialIcon name="school" fill className="text-[#fff]" size={22} />
         </div>
         {!collapsed && (
           <div>
@@ -104,9 +139,9 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
       {/* Nav */}
       <nav className="thin-scrollbar flex-1 space-y-xs overflow-y-auto">
         {items.map((item) => {
-          const active =
-            pathname === item.to ||
-            (item.to !== '/' && pathname.startsWith(item.to + '/'))
+          const active = item.exact
+            ? pathname === item.to
+            : pathname === item.to || (item.to !== '/' && pathname.startsWith(item.to + '/'))
           return (
             <Link
               key={item.to + item.label}
