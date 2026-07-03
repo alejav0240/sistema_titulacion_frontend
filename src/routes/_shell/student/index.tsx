@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useStore } from '@tanstack/react-store'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { AuthGuard } from '#/components/auth/AuthGuard'
-import { ProgressGauge } from '#/components/dashboard/ProgressGauge'
 import { GraduationStepper } from '#/components/dashboard/GraduationStepper'
+import { ESTADO_VERSION_STYLES } from '#/components/projects/StatusBadge'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import {
   Dialog,
@@ -17,7 +17,8 @@ import {
 import { authStore } from '#/hooks/useAuthStore'
 import { useStudentDashboard } from '#/hooks/useDashboard'
 import { useCreateProject, useUpdateProject } from '#/hooks/useProjects'
-import { useCreateVersion, useDeleteVersion } from '#/hooks/useVersions'
+import { useDeleteVersion } from '#/hooks/useVersions'
+import { NuevaVersionModal } from '#/components/projects/NuevaVersionModal'
 import { ObservationMatrix } from '#/components/annotations/ObservationMatrix'
 import { useQuery } from '@tanstack/react-query'
 import api from '#/lib/api'
@@ -45,11 +46,7 @@ function RouteComponent() {
   )
 }
 
-const VERSION_BADGES: Record<string, string> = {
-  'EN REVISION': 'bg-secondary-container text-on-secondary-container',
-  OBSERVADO: 'bg-[#FEF3C7] text-[#92400E]',
-  APROBADO: 'bg-[#D1FAE5] text-[#065F46]',
-}
+const VERSION_BADGES = ESTADO_VERSION_STYLES
 
 const VERSION_LABELS: Record<string, string> = {
   'EN REVISION': 'En revisión',
@@ -64,6 +61,13 @@ function StudentDashboard() {
   const dashboard = useStudentDashboard()
   const [modalOpen, setModalOpen] = useState(Boolean(nueva))
   const [editOpen, setEditOpen] = useState(false)
+
+  // Un click repetido al link del sidebar (siempre a /student?nueva=1) no
+  // remonta este componente, así que el estado inicial del modal no basta:
+  // hay que reabrirlo cada vez que cambie el parámetro.
+  useEffect(() => {
+    if (nueva) setModalOpen(true)
+  }, [nueva])
 
   const data = dashboard.data
   const proyecto = data?.proyecto ?? null
@@ -80,16 +84,16 @@ function StudentDashboard() {
     <div className="space-y-lg">
       {/* Hero + estado actual */}
       <section className="grid grid-cols-1 gap-lg lg:grid-cols-3">
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary-container to-tertiary p-lg text-white lg:col-span-2">
-          <span className="rounded-full bg-white/15 px-sm py-xs text-[10px] font-bold uppercase tracking-widest">
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary-container via-primary-container to-tertiary p-lg text-[#fff] lg:col-span-2">
+          <span className="rounded-full bg-[#fff]/15 px-sm py-xs text-[10px] font-bold uppercase tracking-widest">
             Perfil Académico
           </span>
           <div className="mt-md flex items-end justify-between gap-lg">
             <div className="min-w-0">
               <h2 className="text-headline-md font-bold">{user?.nombre}</h2>
-              <p className="text-body-sm text-white/70">{user?.email}</p>
-              <div className="mt-md max-w-[28rem] rounded-lg bg-white/10 p-sm backdrop-blur-sm">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">
+              <p className="text-body-sm text-[#fff]/70">{user?.email}</p>
+              <div className="mt-md max-w-[28rem] rounded-lg bg-[#fff]/10 p-sm backdrop-blur-sm">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#fff]/60">
                   Título del Proyecto
                 </p>
                 <div className="flex items-center gap-sm">
@@ -101,7 +105,7 @@ function StudentDashboard() {
                       type="button"
                       onClick={() => setEditOpen(true)}
                       title="Editar título y descripción"
-                      className="shrink-0 rounded p-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                      className="shrink-0 rounded p-xs text-[#fff]/70 transition-colors hover:bg-[#fff]/10 hover:text-[#fff]"
                     >
                       <MaterialIcon name="edit" size={16} />
                     </button>
@@ -109,19 +113,18 @@ function StudentDashboard() {
                 </div>
               </div>
             </div>
-            <ProgressGauge value={data?.progreso ?? 0} />
           </div>
         </div>
 
         <div className="flex flex-col gap-lg">
-          <div className="rounded-xl border border-[#FDE68A] bg-[#FFFBEB] p-md">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-md dark:border-amber-800 dark:bg-amber-950/30">
             <div className="flex items-center gap-sm">
               <MaterialIcon
                 name="hourglass_top"
-                className="text-[#B45309]"
+                className="text-amber-600 dark:text-amber-400"
                 size={20}
               />
-              <p className="text-label-sm font-bold uppercase tracking-wider text-[#B45309]">
+              <p className="text-label-sm font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
                 Estado Actual
               </p>
             </div>
@@ -193,8 +196,11 @@ function StudentDashboard() {
       {proyecto?.defensa && <DefensaStudentCard proyecto={proyecto} />}
 
       {proyecto ? (
-        proyecto.etapa === 'PROPUESTA' ? (
-          <PropuestaEnRevisionCard proyecto={proyecto} />
+        proyecto.estado_aprobacion !== 'APROBADO' ? (
+          <>
+            <PropuestaEnRevisionCard proyecto={proyecto} />
+            {proyecto.estado_aprobacion === 'RECHAZADO' && <RegisterProjectCard />}
+          </>
         ) : (
           <>
             <GraduationStepper etapa={proyecto.etapa} />
@@ -212,8 +218,32 @@ function StudentDashboard() {
         <RegisterProjectCard />
       )}
 
+      {/* Actividad reciente (log de auditoría filtrado al estudiante) */}
+      {(data?.actividad ?? []).length > 0 && (
+        <section className="rounded-xl border border-outline-variant bg-white p-lg">
+          <p className="mb-md text-label-sm font-bold uppercase tracking-widest text-outline">
+            Actividad reciente
+          </p>
+          <div className="relative space-y-md">
+            <div className="absolute bottom-1 left-[5px] top-1 w-px bg-outline-variant" />
+            {(data?.actividad ?? []).map((item, i) => (
+              <div key={i} className="relative flex gap-sm">
+                <span className="z-10 mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full border border-outline-variant bg-primary-container ring-2 ring-white" />
+                <div className="min-w-0">
+                  <p className="text-body-sm text-on-surface">
+                    <span className="font-bold">{item.autor}</span>{' '}
+                    <span className="text-on-surface-variant">{item.proyecto}</span>
+                  </p>
+                  <p className="text-label-sm text-outline">{timeAgo(item.created_at)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* FAB Nueva Entrega */}
-      {proyecto && (
+      {proyecto && proyecto.estado_aprobacion === 'APROBADO' && (
         <button
           type="button"
           onClick={() => setModalOpen(true)}
@@ -224,7 +254,7 @@ function StudentDashboard() {
         </button>
       )}
 
-      <NewVersionModal
+      <NuevaVersionModal
         open={modalOpen}
         onClose={() => {
           setModalOpen(false)
@@ -254,7 +284,7 @@ function DefensaStudentCard({ proyecto }: { proyecto: Proyecto }) {
       className={cn(
         'flex flex-col justify-between gap-md rounded-xl border p-lg md:flex-row md:items-center',
         realizada
-          ? 'border-green-200 bg-[#ECFDF5]'
+          ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30'
           : 'border-outline-variant bg-white',
       )}
     >
@@ -263,7 +293,7 @@ function DefensaStudentCard({ proyecto }: { proyecto: Proyecto }) {
           className={cn(
             'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
             realizada
-              ? 'bg-[#10B981] text-white'
+              ? 'bg-emerald-500 text-[#fff]'
               : 'bg-primary-container text-on-primary',
           )}
         >
@@ -280,7 +310,7 @@ function DefensaStudentCard({ proyecto }: { proyecto: Proyecto }) {
             <p className="text-label-md font-bold text-on-surface">
               {RESULTADO_DEFENSA_LABELS[defensa.resultado] ?? defensa.resultado}
               {defensa.calificacion && (
-                <span className="ml-sm rounded-full bg-[#D1FAE5] px-sm py-[2px] text-[10px] font-bold text-[#065F46]">
+                <span className="ml-sm rounded-full bg-emerald-100 px-sm py-[2px] text-[10px] font-bold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
                   Nota: {defensa.calificacion}/100
                 </span>
               )}
@@ -421,9 +451,9 @@ function VersionsTimeline({ versiones }: { versiones: Version[] }) {
               className={cn(
                 'z-10 mt-1 h-4 w-4 rounded-full border ring-4 ring-white',
                 version.estado === 'APROBADO'
-                  ? 'border-green-300 bg-[#10B981]'
+                  ? 'border-emerald-300 bg-emerald-500'
                   : version.estado === 'OBSERVADO'
-                    ? 'border-yellow-300 bg-[#F59E0B]'
+                    ? 'border-amber-300 bg-amber-500'
                     : 'border-outline-variant bg-primary-container',
               )}
             />
@@ -476,8 +506,9 @@ function TutorObservations({ observaciones }: { observaciones: Anotacion[] }) {
                 'rounded px-xs py-[2px] text-[9px] font-bold uppercase tracking-wider',
                 obs.severidad === 'CRITICO'
                   ? 'bg-error-container text-on-error-container'
-                  : 'bg-[#FEF3C7] text-[#92400E]',
-                obs.estado === 'SUBSANADA' && 'bg-green-100 text-green-700',
+                  : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+                obs.estado === 'SUBSANADA' &&
+                  'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
               )}
             >
               {obs.estado === 'SUBSANADA'
@@ -622,7 +653,7 @@ function RegisterProjectCard() {
   return (
     <section className="mx-auto max-w-[36rem] rounded-xl border border-outline-variant bg-white p-lg">
       <div className="mb-md flex items-center gap-sm">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-container text-white">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-container text-[#fff]">
           <MaterialIcon name="post_add" size={20} />
         </div>
         <div>
@@ -675,129 +706,25 @@ function RegisterProjectCard() {
   )
 }
 
-function NewVersionModal({
-  open,
-  onClose,
-  projectId,
-  nextVersion,
-}: {
-  open: boolean
-  onClose: () => void
-  projectId?: number
-  nextVersion: number
-}) {
-  const [url, setUrl] = useState('')
-  const [nombre, setNombre] = useState('')
-  const createVersion = useCreateVersion()
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="rounded-xl border-outline-variant sm:max-w-[28rem]">
-        <DialogHeader>
-          <DialogTitle className="text-headline-md text-primary">
-            Nueva Entrega (V{nextVersion})
-          </DialogTitle>
-          <DialogDescription className="text-body-sm text-on-surface-variant">
-            Pega el link de Google Drive de tu documento PDF. El archivo debe
-            estar compartido como «Cualquier persona con el enlace».
-          </DialogDescription>
-        </DialogHeader>
-        <form
-          className="space-y-md"
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (!projectId || !url.trim()) return
-            createVersion.mutate(
-              {
-                projectId,
-                url_pdf: url.trim(),
-                nombre_archivo: nombre.trim(),
-              },
-              {
-                onSuccess: () => {
-                  setUrl('')
-                  setNombre('')
-                  onClose()
-                },
-              },
-            )
-          }}
-        >
-          <div className="flex flex-col gap-xs">
-            <label
-              className="text-label-md text-on-surface-variant"
-              htmlFor="drive-url"
-            >
-              Link de Google Drive
-            </label>
-            <input
-              id="drive-url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://drive.google.com/file/d/…/view"
-              className="h-[48px] rounded-xl border border-outline-variant bg-surface-container-lowest px-md text-body-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary-container"
-            />
-          </div>
-          <div className="flex flex-col gap-xs">
-            <label
-              className="text-label-md text-on-surface-variant"
-              htmlFor="file-name"
-            >
-              Nombre del archivo (opcional)
-            </label>
-            <input
-              id="file-name"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder={`tesis_v${nextVersion}.pdf`}
-              className="h-[48px] rounded-xl border border-outline-variant bg-surface-container-lowest px-md text-body-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary-container"
-            />
-          </div>
-          {createVersion.isError && (
-            <p className="rounded-lg bg-error-container p-sm text-body-sm text-on-error-container">
-              {(() => {
-                const err = createVersion.error as {
-                  response?: { data?: { url_pdf?: string[]; detail?: string } }
-                }
-                return (
-                  err.response?.data?.url_pdf?.[0] ??
-                  err.response?.data?.detail ??
-                  'No se pudo registrar la entrega.'
-                )
-              })()}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={createVersion.isPending || !url.trim()}
-            className="flex h-[48px] w-full items-center justify-center gap-sm rounded-xl bg-primary-container text-label-md font-bold text-on-primary transition-all hover:brightness-110 disabled:opacity-50"
-          >
-            <MaterialIcon name="upload_file" size={20} />
-            {createVersion.isPending ? 'Registrando…' : 'Registrar entrega'}
-          </button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 function PropuestaEnRevisionCard({ proyecto }: { proyecto: Proyecto }) {
-  const rechazada =
-    proyecto.estado === 'EN REVISION' && !!proyecto.motivo_rechazo
+  const rechazada = proyecto.estado_aprobacion === 'RECHAZADO'
   return (
     <section
       className={cn(
         'rounded-xl border p-lg',
         rechazada
           ? 'border-error bg-error-container'
-          : 'border-[#FDE68A] bg-[#FFFBEB]',
+          : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30',
       )}
     >
       <div className="flex items-start gap-md">
         <div
           className={cn(
             'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
-            rechazada ? 'bg-error text-on-error' : 'bg-[#F59E0B] text-white',
+            rechazada
+              ? 'bg-error text-on-error'
+              : 'bg-amber-500 text-[#fff]',
           )}
         >
           <MaterialIcon
