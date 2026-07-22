@@ -21,6 +21,9 @@ export interface Grupo {
   materias_nombres: { id: number; nombre: string }[]
 }
 
+import type { MatrizConsistencia } from './project'
+import type { Formulario } from './formulario'
+
 export interface Inscripcion {
   id: number
   materia: number
@@ -30,7 +33,10 @@ export interface Inscripcion {
   proyecto: {
     id: number
     titulo: string
+    etapa: string
     estado_aprobacion: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO'
     motivo_rechazo: string
+    matrices: MatrizConsistencia[]
+    formularios: Formulario[]
   } | null
 }

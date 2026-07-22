@@ -16,9 +16,14 @@ import {
 } from '#/components/ui/dialog'
 import { authStore } from '#/hooks/useAuthStore'
 import { useStudentDashboard } from '#/hooks/useDashboard'
-import { useCreateProject, useUpdateProject } from '#/hooks/useProjects'
+import { useCreateProject, useSeleccionarMatriz, useUpdateProject } from '#/hooks/useProjects'
 import { useDeleteVersion } from '#/hooks/useVersions'
 import { NuevaVersionModal } from '#/components/projects/NuevaVersionModal'
+import { MatrizConsistenciaPanel } from '#/components/projects/MatrizConsistenciaPanel'
+import { useFormularios } from '#/hooks/useFormularios'
+import { SubirFormularioModal } from '#/components/projects/SubirFormularioModal'
+import { TIPO_FORMULARIO_LABELS } from '#/types/formulario'
+import type { Formulario, FormularioEntrega } from '#/types/formulario'
 import { ObservationMatrix } from '#/components/annotations/ObservationMatrix'
 import { useQuery } from '@tanstack/react-query'
 import api from '#/lib/api'
@@ -30,7 +35,7 @@ import {
 } from '#/lib/datetime'
 import { cn } from '#/lib/utils'
 import type { Anotacion } from '#/types/annotation'
-import type { Proyecto, Version } from '#/types/project'
+import type { MatrizInput, Proyecto, Version } from '#/types/project'
 import { ETAPA_LABELS, RESULTADO_DEFENSA_LABELS } from '#/types/project'
 
 export const Route = createFileRoute('/_shell/student/')({
@@ -98,13 +103,13 @@ function StudentDashboard() {
                 </p>
                 <div className="flex items-center gap-sm">
                   <p className="truncate text-label-md font-bold">
-                    {proyecto?.titulo ?? 'Sin proyecto registrado'}
+                    {proyecto?.titulo || (proyecto ? 'Tema pendiente de aprobación' : 'Sin proyecto registrado')}
                   </p>
-                  {proyecto && (
+                  {proyecto && proyecto.estado_aprobacion === 'APROBADO' && proyecto.estado !== 'CONCLUIDO' && (
                     <button
                       type="button"
                       onClick={() => setEditOpen(true)}
-                      title="Editar título y descripción"
+                      title="Editar descripción"
                       className="shrink-0 rounded p-xs text-[#fff]/70 transition-colors hover:bg-[#fff]/10 hover:text-[#fff]"
                     >
                       <MaterialIcon name="edit" size={16} />
@@ -141,6 +146,11 @@ function StudentDashboard() {
                   }`
                 : 'Registra tu proyecto para comenzar'}
             </p>
+            {(data?.materias?.length ?? 0) > 0 && (
+              <p className="mt-xs text-label-sm text-on-surface-variant">
+                Materia: {data?.materias.join(', ')}
+              </p>
+            )}
             {data?.tutor && (
               <p className="mt-xs text-label-sm text-on-surface-variant">
                 Tutor: {data.tutor}
@@ -196,14 +206,30 @@ function StudentDashboard() {
       {proyecto?.defensa && <DefensaStudentCard proyecto={proyecto} />}
 
       {proyecto ? (
-        proyecto.estado_aprobacion !== 'APROBADO' ? (
+        proyecto.estado === 'CONCLUIDO' ? (
           <>
-            <PropuestaEnRevisionCard proyecto={proyecto} />
-            {proyecto.estado_aprobacion === 'RECHAZADO' && <RegisterProjectCard />}
+            <GraduationStepper etapa={proyecto.etapa} />
+            <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-lg dark:border-emerald-900 dark:bg-emerald-900/20">
+              <p className="flex items-center gap-sm text-label-md font-bold text-emerald-800 dark:text-emerald-300">
+                <MaterialIcon name="workspace_premium" size={20} />
+                Proyecto concluido — modo solo lectura
+              </p>
+              <p className="mt-xs text-body-sm text-emerald-700 dark:text-emerald-400">
+                Tu proyecto de grado ya fue concluido. Puedes revisar tu historial, pero
+                ya no se aceptan nuevas entregas ni correcciones.
+              </p>
+            </div>
+            <section className="grid grid-cols-1 gap-lg lg:grid-cols-2">
+              <VersionsTimeline versiones={data?.versiones ?? []} />
+              <VersionsHistory versiones={data?.versiones ?? []} />
+            </section>
           </>
+        ) : proyecto.estado_aprobacion !== 'APROBADO' ? (
+          <PropuestaEnRevisionCard proyecto={proyecto} />
         ) : (
           <>
             <GraduationStepper etapa={proyecto.etapa} />
+            <TemaAlternativoBanner proyecto={proyecto} />
 
             <section className="grid grid-cols-1 gap-lg lg:grid-cols-3">
               <VersionsTimeline versiones={data?.versiones ?? []} />
@@ -212,6 +238,7 @@ function StudentDashboard() {
             </section>
 
             <ObservationMatrixSection proyectoId={proyecto.id} />
+            <MisFormulariosSection proyectoId={proyecto.id} />
           </>
         )
       ) : (
@@ -243,7 +270,7 @@ function StudentDashboard() {
       )}
 
       {/* FAB Nueva Entrega */}
-      {proyecto && proyecto.estado_aprobacion === 'APROBADO' && (
+      {proyecto && proyecto.estado_aprobacion === 'APROBADO' && proyecto.estado !== 'CONCLUIDO' && (
         <button
           type="button"
           onClick={() => setModalOpen(true)}
@@ -347,7 +374,6 @@ function EditProjectModal({
   proyecto: Proyecto
 }) {
   const updateProject = useUpdateProject()
-  const [titulo, setTitulo] = useState(proyecto.titulo)
   const [descripcion, setDescripcion] = useState(proyecto.descripcion ?? '')
 
   return (
@@ -355,32 +381,24 @@ function EditProjectModal({
       open={open}
       onOpenChange={(o) => {
         if (!o) onClose()
-        else {
-          setTitulo(proyecto.titulo)
-          setDescripcion(proyecto.descripcion ?? '')
-        }
+        else setDescripcion(proyecto.descripcion ?? '')
       }}
     >
       <DialogContent className="rounded-xl border-outline-variant sm:max-w-[28rem]">
         <DialogHeader>
           <DialogTitle className="text-headline-md text-primary">
-            Editar proyecto
+            Editar descripción
           </DialogTitle>
           <DialogDescription className="text-body-sm text-on-surface-variant">
-            Actualiza el título o la descripción de tu proyecto.
+            El título viene de la matriz de consistencia aprobada y no se puede editar.
           </DialogDescription>
         </DialogHeader>
         <form
           className="space-y-md"
           onSubmit={(e) => {
             e.preventDefault()
-            if (!titulo.trim()) return
             updateProject.mutate(
-              {
-                id: proyecto.id,
-                titulo: titulo.trim(),
-                descripcion: descripcion.trim(),
-              },
+              { id: proyecto.id, descripcion: descripcion.trim() },
               {
                 onSuccess: () => {
                   toast.success('Proyecto actualizado.')
@@ -390,21 +408,6 @@ function EditProjectModal({
             )
           }}
         >
-          <div className="flex flex-col gap-xs">
-            <label
-              className="text-label-md text-on-surface-variant"
-              htmlFor="edit-titulo"
-            >
-              Título
-            </label>
-            <input
-              id="edit-titulo"
-              value={titulo}
-              maxLength={255}
-              onChange={(e) => setTitulo(e.target.value)}
-              className="h-[48px] rounded-xl border border-outline-variant bg-surface-container-lowest px-md text-body-md outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary-container"
-            />
-          </div>
           <div className="flex flex-col gap-xs">
             <label
               className="text-label-md text-on-surface-variant"
@@ -422,7 +425,7 @@ function EditProjectModal({
           </div>
           <button
             type="submit"
-            disabled={updateProject.isPending || !titulo.trim()}
+            disabled={updateProject.isPending}
             className="flex h-[48px] w-full items-center justify-center gap-sm rounded-xl bg-primary-container text-label-md font-bold text-on-primary transition-all hover:brightness-110 disabled:opacity-50"
           >
             <MaterialIcon name="save" size={20} />
@@ -646,60 +649,88 @@ function VersionsHistory({ versiones }: { versiones: Version[] }) {
   )
 }
 
+const MATRIZ_VACIA: MatrizInput = { tema: '', problematica: '', objetivos: '' }
+
 function RegisterProjectCard() {
-  const [titulo, setTitulo] = useState('')
+  const [matrices, setMatrices] = useState<MatrizInput[]>([
+    { ...MATRIZ_VACIA },
+    { ...MATRIZ_VACIA },
+    { ...MATRIZ_VACIA },
+  ])
   const createProject = useCreateProject()
 
+  const setCampo = (i: number, campo: keyof MatrizInput, value: string) =>
+    setMatrices((prev) =>
+      prev.map((m, idx) => (idx === i ? { ...m, [campo]: value } : m)),
+    )
+
+  const completo = matrices.every(
+    (m) => m.tema.trim() && m.problematica.trim() && m.objetivos.trim(),
+  )
+
   return (
-    <section className="mx-auto max-w-[36rem] rounded-xl border border-outline-variant bg-white p-lg">
+    <section className="mx-auto max-w-[42rem] rounded-xl border border-outline-variant bg-white p-lg">
       <div className="mb-md flex items-center gap-sm">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-container text-[#fff]">
           <MaterialIcon name="post_add" size={20} />
         </div>
         <div>
           <h3 className="text-headline-md text-primary">
-            Registra tu proyecto
+            Registra las 3 matrices de consistencia
           </h3>
           <p className="text-body-sm text-on-surface-variant">
-            El primer paso de tu proceso de titulación.
+            Propón 3 combinaciones de Tema, Problemática y Objetivos. El docente y el
+            Comité de Evaluación aprobarán una para iniciar tu perfil.
           </p>
         </div>
       </div>
       <form
-        className="space-y-md"
+        className="space-y-lg"
         onSubmit={(e) => {
           e.preventDefault()
-          if (titulo.trim()) createProject.mutate(titulo.trim())
+          if (completo) createProject.mutate(matrices)
         }}
       >
-        <div className="flex flex-col gap-xs">
-          <label
-            className="text-label-md text-on-surface-variant"
-            htmlFor="titulo"
-          >
-            Título del proyecto
-          </label>
-          <input
-            id="titulo"
-            value={titulo}
-            maxLength={255}
-            onChange={(e) => setTitulo(e.target.value)}
-            placeholder="Ej. Optimización de procesos académicos"
-            className="h-[48px] rounded-xl border border-outline-variant bg-surface-container-lowest px-md text-body-md outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary-container"
-          />
-        </div>
+        {matrices.map((m, i) => (
+          <div key={i} className="space-y-xs rounded-xl border border-outline-variant p-md">
+            <p className="text-label-sm font-bold uppercase tracking-wider text-outline">
+              Matriz {i + 1}
+            </p>
+            <input
+              value={m.tema}
+              maxLength={255}
+              onChange={(e) => setCampo(i, 'tema', e.target.value)}
+              placeholder="Tema"
+              className="h-[44px] w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-md text-body-md outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary-container"
+            />
+            <textarea
+              value={m.problematica}
+              onChange={(e) => setCampo(i, 'problematica', e.target.value)}
+              placeholder="Problemática"
+              rows={2}
+              className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest p-md text-body-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary-container"
+            />
+            <textarea
+              value={m.objetivos}
+              onChange={(e) => setCampo(i, 'objetivos', e.target.value)}
+              placeholder="Objetivos"
+              rows={2}
+              className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest p-md text-body-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary-container"
+            />
+          </div>
+        ))}
         {createProject.isError && (
           <p className="rounded-lg bg-error-container p-sm text-body-sm text-on-error-container">
-            No se pudo registrar el proyecto. Intenta de nuevo.
+            No se pudo registrar el perfil. Intenta de nuevo.
           </p>
         )}
         <button
           type="submit"
-          disabled={createProject.isPending || !titulo.trim()}
+          disabled={createProject.isPending || !completo}
           className="flex h-[48px] w-full items-center justify-center gap-sm rounded-xl bg-primary-container text-label-md font-bold text-on-primary transition-all hover:brightness-110 disabled:opacity-50"
         >
           <MaterialIcon name="add" size={20} />
-          Registrar proyecto
+          Registrar matrices
         </button>
       </form>
     </section>
@@ -707,48 +738,61 @@ function RegisterProjectCard() {
 }
 
 
-function PropuestaEnRevisionCard({ proyecto }: { proyecto: Proyecto }) {
-  const rechazada = proyecto.estado_aprobacion === 'RECHAZADO'
+function TemaAlternativoBanner({ proyecto }: { proyecto: Proyecto }) {
+  const seleccionar = useSeleccionarMatriz()
+  const alternativas = proyecto.matrices.filter((m) => m.estado === 'APROBADA' && !m.elegida)
+  if (alternativas.length === 0) return null
   return (
-    <section
-      className={cn(
-        'rounded-xl border p-lg',
-        rechazada
-          ? 'border-error bg-error-container'
-          : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30',
-      )}
-    >
-      <div className="flex items-start gap-md">
-        <div
-          className={cn(
-            'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
-            rechazada
-              ? 'bg-error text-on-error'
-              : 'bg-amber-500 text-[#fff]',
-          )}
-        >
-          <MaterialIcon
-            name={rechazada ? 'cancel' : 'hourglass_top'}
-            size={24}
-          />
-        </div>
-        <div className="min-w-0">
-          <p className="text-label-sm font-bold uppercase tracking-widest text-outline">
-            {rechazada ? 'Propuesta rechazada' : 'Propuesta en revisión'}
-          </p>
-          <p className="mt-xs text-label-md font-bold text-on-surface">
-            {rechazada
-              ? 'Tu propuesta fue rechazada. Puedes corregirla y volver a presentarla.'
-              : 'Tu propuesta está siendo evaluada por el docente de la materia. Te notificaremos cuando sea aprobada.'}
-          </p>
-          {rechazada && proyecto.motivo_rechazo && (
-            <p className="mt-sm rounded-lg bg-white/60 p-sm text-body-sm text-on-error-container">
-              <span className="font-bold">Motivo: </span>
-              {proyecto.motivo_rechazo}
+    <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-lg dark:border-emerald-900 dark:bg-emerald-900/20">
+      <p className="text-label-md font-bold text-emerald-800 dark:text-emerald-300">
+        Tienes otro tema aprobado por docente y comité. Puedes cambiarte si lo prefieres:
+      </p>
+      <div className="mt-sm flex flex-col gap-sm">
+        {alternativas.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            disabled={seleccionar.isPending}
+            onClick={() =>
+              seleccionar.mutate(
+                { proyectoId: proyecto.id, matrizId: m.id },
+                { onSuccess: () => toast.success('Tema actualizado.') },
+              )
+            }
+            className="rounded-lg border border-emerald-400 bg-white px-md py-sm text-left text-body-sm hover:bg-emerald-100 disabled:opacity-50 dark:bg-zinc-900 dark:hover:bg-emerald-900/40"
+          >
+            <span className="font-bold">Matriz {m.orden}:</span> {m.tema}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PropuestaEnRevisionCard({ proyecto }: { proyecto: Proyecto }) {
+  if (proyecto.matrices.length === 0) {
+    // Proyectos antiguos (previos a las matrices de consistencia) no tienen filas que mostrar.
+    return null
+  }
+  return (
+    <section className="space-y-md">
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-lg dark:border-amber-800 dark:bg-amber-950/30">
+        <div className="flex items-start gap-md">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-[#fff]">
+            <MaterialIcon name="hourglass_top" size={24} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-label-sm font-bold uppercase tracking-widest text-outline">
+              Perfil en revisión
             </p>
-          )}
+            <p className="mt-xs text-label-md font-bold text-on-surface">
+              Tus matrices de consistencia están siendo evaluadas por el docente y el
+              Comité de Evaluación. Si una es rechazada, podrás corregirla y reenviarla.
+            </p>
+          </div>
         </div>
       </div>
+      <MatrizConsistenciaPanel proyecto={proyecto} puedeEditar />
     </section>
   )
 }
@@ -773,6 +817,67 @@ function ObservationMatrixSection({ proyectoId }: { proyectoId: number }) {
         <p className="text-body-sm text-outline">Cargando…</p>
       ) : (
         <ObservationMatrix observaciones={observaciones} />
+      )}
+    </section>
+  )
+}
+
+function MisFormulariosSection({ proyectoId }: { proyectoId: number }) {
+  const user = useStore(authStore, (s) => s.user)
+  const formularios = useFormularios(proyectoId)
+  const [subiendo, setSubiendo] = useState<{ formulario: Formulario; entrega: FormularioEntrega } | null>(null)
+
+  const lista = formularios.data ?? []
+  if (!formularios.isLoading && lista.length === 0) return null
+
+  return (
+    <section className="rounded-xl border border-outline-variant bg-white p-lg">
+      <p className="mb-md text-label-sm font-bold uppercase tracking-widest text-outline">
+        Mis Formularios
+      </p>
+      <div className="space-y-sm">
+        {lista.map((formulario) => {
+          const miEntrega = formulario.entregas.find((e) => e.usuario === user?.id)
+          if (!miEntrega) return null
+          return (
+            <div key={formulario.id} className="flex items-center justify-between gap-sm rounded-lg border border-outline-variant p-sm">
+              <p className="text-label-md font-bold text-on-surface">
+                {TIPO_FORMULARIO_LABELS[formulario.tipo]}
+              </p>
+              {miEntrega.estado === 'ENTREGADO' ? (
+                <a
+                  href={miEntrega.link_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-xs text-label-sm font-bold text-primary hover:underline"
+                >
+                  <MaterialIcon name="link" size={14} />
+                  Ver mi entrega
+                </a>
+              ) : formulario.activo ? (
+                <button
+                  type="button"
+                  onClick={() => setSubiendo({ formulario, entrega: miEntrega })}
+                  className="rounded-lg bg-primary-container px-sm py-xs text-label-sm font-bold text-on-primary hover:brightness-110"
+                >
+                  Subir link
+                </button>
+              ) : (
+                <span className="rounded-full bg-error-container px-sm py-[2px] text-[10px] font-bold uppercase text-on-error-container">
+                  No disponible
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {subiendo && (
+        <SubirFormularioModal
+          formulario={subiendo.formulario}
+          entrega={subiendo.entrega}
+          onClose={() => setSubiendo(null)}
+        />
       )}
     </section>
   )

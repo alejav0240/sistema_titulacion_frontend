@@ -40,7 +40,7 @@ function CronogramaPage() {
   const { vista = 'calendario' } = Route.useSearch()
   const navigate = Route.useNavigate()
   const user = useStore(authStore, (s) => s.user)
-  const isAdmin = user?.rol === 'DIRECTOR' || user?.rol === 'DTC'
+  const isAdmin = ['DIRECTOR', 'DTC', 'COMITE_EVALUACION'].includes(user?.rol ?? '')
   // TUTOR y TRIBUNAL son solo lectura en el cronograma
   const canCreate = isAdmin || user?.rol === 'DOCENTE'
 

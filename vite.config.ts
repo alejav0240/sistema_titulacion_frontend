@@ -11,7 +11,9 @@ import contentCollections from '@content-collections/vite'
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
   plugins: [
-    netlify(),
+    // ponytail: edgeFunctions emulation crashes vite dev (fetch fails without
+    // outbound network, e.g. inside docker) — no Edge Functions used here.
+    netlify({ dev: { edgeFunctions: { enabled: false } } }),
     contentCollections(),
     tailwindcss(),
     tanstackStart(),

@@ -6,13 +6,17 @@ export interface EventoCronograma {
   /** Subset de ESTUDIANTES|DOCENTES|TUTORES|TRIBUNALES; vacío = todos */
   publicos: string[]
   tipo: string
+  carpeta_url: string
   fecha_inicio: string
   fecha_fin: string
+  dias_duracion: number | null
   descripcion: string
   semestre: number
   /** IDs de grupos objetivo; vacío = todos los grupos */
   grupos: number[]
   grupos_nombres: string[]
+  /** IDs de usuarios puntuales objetivo; si no está vacío, manda sobre publicos/grupos */
+  usuarios: number[]
   creado_por_id: number | null
   created_at: string
 }
@@ -22,6 +26,7 @@ export interface StudentDashboard {
   progreso: number
   tutor: string | null
   tribunal: string[]
+  materias: string[]
   versiones: Version[]
   observaciones: Anotacion[]
   proximos_eventos: EventoCronograma[]

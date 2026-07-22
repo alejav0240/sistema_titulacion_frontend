@@ -9,22 +9,15 @@ import {
   Tooltip,
   XAxis,
 } from 'recharts'
-import { toast } from 'sonner'
 import { AuthGuard } from '#/components/auth/AuthGuard'
 import { MiniCalendar } from '#/components/dashboard/MiniCalendar'
 import { StatusBadge } from '#/components/projects/StatusBadge'
+import { MatrizConsistenciaPanel } from '#/components/projects/MatrizConsistenciaPanel'
 import { ClientOnly } from '#/components/ui/ClientOnly'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '#/components/ui/dialog'
 import { initials } from '#/components/layout/Topbar'
 import { useTeacherDashboard } from '#/hooks/useDashboard'
-import { useProjects, useAprobarPropuesta, useRechazarPropuesta } from '#/hooks/useProjects'
+import { useProjects } from '#/hooks/useProjects'
 import { timeAgo } from '#/lib/datetime'
 import { cn } from '#/lib/utils'
 import type { Proyecto } from '#/types/project'
@@ -338,131 +331,64 @@ function TribunalesCard({ proyectos }: { proyectos: Proyecto[] }) {
 
 function PropuestasPendientesCard() {
   const { data, isLoading } = useProjects({ estado_aprobacion: 'PENDIENTE' })
-  const aprobar = useAprobarPropuesta()
-  const rechazar = useRechazarPropuesta()
-  const [rechazoOpen, setRechazoOpen] = useState(false)
-  const [rechazoProyecto, setRechazoProyecto] = useState<Proyecto | null>(null)
-  const [motivo, setMotivo] = useState('')
+  const [expandidoId, setExpandidoId] = useState<number | null>(null)
 
   const propuestas = data?.results ?? []
 
   return (
-    <>
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-lg dark:border-amber-800 dark:bg-amber-950/30">
-        <div className="mb-md flex items-center justify-between">
-          <h3 className="text-label-md font-bold text-on-surface">
-            Propuestas pendientes de aprobación
-          </h3>
-          <RolBadge label="Materia" />
-        </div>
-        {isLoading ? (
-          <p className="text-body-sm text-outline">Cargando propuestas…</p>
-        ) : (
-          <div className="space-y-sm">
-            {propuestas.map((proyecto) => (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-lg dark:border-amber-800 dark:bg-amber-950/30">
+      <div className="mb-md flex items-center justify-between">
+        <h3 className="text-label-md font-bold text-on-surface">
+          Perfiles pendientes de aprobación
+        </h3>
+        <RolBadge label="Materia" />
+      </div>
+      {isLoading ? (
+        <p className="text-body-sm text-outline">Cargando perfiles…</p>
+      ) : (
+        <div className="space-y-sm">
+          {propuestas.map((proyecto) => {
+            const expandido = expandidoId === proyecto.id
+            return (
               <div
                 key={proyecto.id}
-                className="flex items-center justify-between rounded-lg border border-amber-200 bg-white p-sm dark:border-amber-800"
+                className="rounded-lg border border-amber-200 bg-white p-sm dark:border-amber-800"
               >
-                <div className="min-w-0">
-                  <p className="text-label-md font-bold text-on-surface">
-                    {proyecto.estudiante_nombre}
-                  </p>
-                  <p className="truncate text-body-sm text-on-surface-variant">
-                    {proyecto.titulo}
-                  </p>
-                  <p className="text-label-sm text-outline">
-                    {timeAgo(proyecto.created_at)}
-                  </p>
-                </div>
-                <div className="ml-md flex shrink-0 gap-sm">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="text-label-md font-bold text-on-surface">
+                      {proyecto.estudiante_nombre}
+                    </p>
+                    <p className="truncate text-body-sm text-on-surface-variant">
+                      {proyecto.titulo || 'Tema pendiente'}
+                    </p>
+                    <p className="text-label-sm text-outline">
+                      {timeAgo(proyecto.created_at)}
+                    </p>
+                  </div>
                   <button
                     type="button"
-                    disabled={aprobar.isPending}
-                    onClick={() =>
-                      aprobar.mutate(proyecto.id, {
-                        onSuccess: () => toast.success('Propuesta aprobada.'),
-                      })
-                    }
-                    className="rounded-lg bg-[#10B981] px-md py-sm text-label-sm font-bold text-[#fff] transition-all hover:brightness-110 disabled:opacity-50"
+                    onClick={() => setExpandidoId(expandido ? null : proyecto.id)}
+                    className="ml-md shrink-0 rounded-lg border border-primary px-md py-sm text-label-sm font-bold text-primary transition-all hover:bg-primary-container hover:text-on-primary"
                   >
-                    Aprobar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRechazoProyecto(proyecto)
-                      setMotivo('')
-                      setRechazoOpen(true)
-                    }}
-                    className="rounded-lg border border-error px-md py-sm text-label-sm font-bold text-error transition-all hover:bg-error-container disabled:opacity-50"
-                  >
-                    Rechazar
+                    {expandido ? 'Ocultar matrices' : 'Revisar matrices'}
                   </button>
                 </div>
+                {expandido && (
+                  <div className="mt-sm">
+                    <MatrizConsistenciaPanel proyecto={proyecto} rolDecisor="DOCENTE" />
+                  </div>
+                )}
               </div>
-            ))}
-            {propuestas.length === 0 && (
-              <p className="py-md text-center text-body-sm text-outline">
-                No hay propuestas pendientes de aprobación.
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
-      <Dialog open={rechazoOpen} onOpenChange={(o) => !o && setRechazoOpen(false)}>
-        <DialogContent className="rounded-xl border-outline-variant sm:max-w-[28rem]">
-          <DialogHeader>
-            <DialogTitle className="text-headline-md text-error">
-              Rechazar propuesta
-            </DialogTitle>
-            <DialogDescription className="text-body-sm text-on-surface-variant">
-              Indica el motivo para que el estudiante pueda corregir su propuesta.
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            className="space-y-md"
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (!rechazoProyecto) return
-              rechazar.mutate(
-                { proyectoId: rechazoProyecto.id, motivo },
-                {
-                  onSuccess: () => {
-                    toast.success('Propuesta rechazada.')
-                    setRechazoOpen(false)
-                  },
-                },
-              )
-            }}
-          >
-            <textarea
-              rows={3}
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Describe el motivo del rechazo (opcional)"
-              className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest p-md text-body-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary-container"
-            />
-            <div className="flex gap-sm">
-              <button
-                type="button"
-                onClick={() => setRechazoOpen(false)}
-                className="flex-1 rounded-xl border border-outline-variant py-sm text-label-md font-bold text-on-surface-variant"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={rechazar.isPending}
-                className="flex-1 rounded-xl bg-error py-sm text-label-md font-bold text-on-error transition-all hover:brightness-110 disabled:opacity-50"
-              >
-                {rechazar.isPending ? 'Rechazando…' : 'Confirmar rechazo'}
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </>
+            )
+          })}
+          {propuestas.length === 0 && (
+            <p className="py-md text-center text-body-sm text-outline">
+              No hay perfiles pendientes de aprobación.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   )
 }

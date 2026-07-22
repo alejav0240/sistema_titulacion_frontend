@@ -6,13 +6,20 @@ import {
 import api from '#/lib/api'
 import type { Inscripcion, Materia } from '#/types/materia'
 
-export function useMaterias(filters?: { search?: string; semestre?: string }) {
+export function useMaterias(filters?: {
+  search?: string
+  semestre?: string
+  gestion_anio?: string
+  gestion_semestre?: string
+}) {
   return useQuery({
     queryKey: ['materias', filters],
     queryFn: async () => {
       const params: Record<string, string> = {}
       if (filters?.search) params.search = filters.search
       if (filters?.semestre) params.semestre = filters.semestre
+      if (filters?.gestion_anio) params.gestion_anio = filters.gestion_anio
+      if (filters?.gestion_semestre) params.gestion_semestre = filters.gestion_semestre
       const { data } = await api.get<Materia[]>('/api/materias/', { params })
       return data
     },

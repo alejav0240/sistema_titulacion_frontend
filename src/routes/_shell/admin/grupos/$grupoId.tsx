@@ -11,7 +11,7 @@ export const Route = createFileRoute('/_shell/admin/grupos/$grupoId')({
 
 function RouteComponent() {
   return (
-    <AuthGuard allowedRoles={['DIRECTOR', 'DTC']}>
+    <AuthGuard allowedRoles={['DIRECTOR', 'DTC', 'COMITE_EVALUACION']}>
       <GrupoDetailPage />
     </AuthGuard>
   )

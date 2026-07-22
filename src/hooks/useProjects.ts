@@ -4,7 +4,12 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import api from '#/lib/api'
-import type { Defensa, Proyecto, ProyectosResponse } from '#/types/project'
+import type {
+  Defensa,
+  MatrizInput,
+  Proyecto,
+  ProyectosResponse,
+} from '#/types/project'
 
 export interface ProjectFilters {
   search?: string
@@ -60,8 +65,8 @@ export function useActiveProject() {
 export function useCreateProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (titulo: string) => {
-      const { data } = await api.post<Proyecto>('/api/projects/', { titulo })
+    mutationFn: async (matrices: MatrizInput[]) => {
+      const { data } = await api.post<Proyecto>('/api/projects/', { matrices })
       return data
     },
     onSuccess: () => {
@@ -80,7 +85,6 @@ export function useUpdateProject() {
       ...payload
     }: {
       id: number
-      titulo?: string
       descripcion?: string
       estado?: string
       etapa?: string
@@ -101,9 +105,9 @@ export function useUpdateProject() {
 export interface DefensaPayload {
   fecha_hora?: string
   lugar?: string
+  tipo_defensa?: string
   estado?: string
   calificacion?: string
-  resultado?: string
   acta_url?: string
   observaciones?: string
 }
@@ -164,31 +168,89 @@ export function useActualizarDefensa() {
   })
 }
 
-export function useAprobarPropuesta() {
+// Los endpoints de matriz devuelven el Proyecto completo ya actualizado: en vez de
+// solo invalidar (lo que dispara un refetch async y deja la UI vieja un instante),
+// se escribe ese resultado directo en cache para feedback instantáneo, y además
+// se invalida lo que no se puede parchear en el mismo formato.
+function applyMatrizResult(qc: ReturnType<typeof useQueryClient>, proyecto: Proyecto) {
+  qc.setQueryData(['project', proyecto.id], proyecto)
+  qc.setQueryData(
+    ['student-active-project'],
+    (old: { project: Proyecto | null } | undefined) =>
+      old?.project?.id === proyecto.id ? { project: proyecto } : old,
+  )
+  qc.setQueriesData<ProyectosResponse>({ queryKey: ['projects'] }, (old) =>
+    old
+      ? { ...old, results: old.results.map((p) => (p.id === proyecto.id ? proyecto : p)) }
+      : old,
+  )
+  qc.invalidateQueries({ queryKey: ['materia-estudiantes'] })
+  qc.invalidateQueries({ queryKey: ['dashboard'] })
+}
+
+export function useAprobarMatriz() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (proyectoId: number) => {
-      const { data } = await api.post<Proyecto>(`/api/projects/${proyectoId}/aprobar-propuesta/`)
+    mutationFn: async ({ proyectoId, matrizId }: { proyectoId: number; matrizId: number }) => {
+      const { data } = await api.post<Proyecto>(
+        `/api/projects/${proyectoId}/matrices/${matrizId}/aprobar/`,
+      )
       return data
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['projects'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
-    },
+    onSuccess: (data) => applyMatrizResult(qc, data),
   })
 }
 
-export function useRechazarPropuesta() {
+export function useRechazarMatriz() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ proyectoId, motivo }: { proyectoId: number; motivo: string }) => {
-      const { data } = await api.post<Proyecto>(`/api/projects/${proyectoId}/rechazar-propuesta/`, { motivo })
+    mutationFn: async ({
+      proyectoId,
+      matrizId,
+      motivo,
+    }: {
+      proyectoId: number
+      matrizId: number
+      motivo: string
+    }) => {
+      const { data } = await api.post<Proyecto>(
+        `/api/projects/${proyectoId}/matrices/${matrizId}/rechazar/`,
+        { motivo },
+      )
       return data
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['projects'] })
-      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    onSuccess: (data) => applyMatrizResult(qc, data),
+  })
+}
+
+export function useEditarMatriz() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      proyectoId,
+      matrizId,
+      ...payload
+    }: MatrizInput & { proyectoId: number; matrizId: number }) => {
+      const { data } = await api.patch<Proyecto>(
+        `/api/projects/${proyectoId}/matrices/${matrizId}/`,
+        payload,
+      )
+      return data
     },
+    onSuccess: (data) => applyMatrizResult(qc, data),
+  })
+}
+
+export function useSeleccionarMatriz() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ proyectoId, matrizId }: { proyectoId: number; matrizId: number }) => {
+      const { data } = await api.post<Proyecto>(
+        `/api/projects/${proyectoId}/matrices/${matrizId}/seleccionar/`,
+      )
+      return data
+    },
+    onSuccess: (data) => applyMatrizResult(qc, data),
   })
 }
 

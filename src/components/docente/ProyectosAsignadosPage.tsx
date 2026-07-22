@@ -58,7 +58,7 @@ export function ProyectosAsignadosPage({
                   </div>
                 </td>
                 <td className="max-w-[280px] px-md py-md">
-                  <p className="truncate text-label-md font-bold text-on-surface">{proyecto.titulo}</p>
+                  <p className="truncate text-label-md font-bold text-on-surface">{proyecto.titulo || 'Tema pendiente'}</p>
                   <p className="text-[10px] uppercase tracking-wider text-outline">{proyecto.codigo}</p>
                 </td>
                 <td className="px-md py-md">

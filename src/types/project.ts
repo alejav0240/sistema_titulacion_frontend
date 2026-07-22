@@ -1,3 +1,5 @@
+import type { Formulario } from './formulario'
+
 export type EstadoProyecto = 'EN CURSO' | 'EN REVISION' | 'CONCLUIDO'
 export type EstadoVersion = 'APROBADO' | 'EN REVISION' | 'OBSERVADO'
 export type EstadoRevision = EstadoVersion | 'BORRADOR'
@@ -17,6 +19,7 @@ export interface VersionResumen {
 }
 
 export type EstadoDefensa = 'PROGRAMADA' | 'REALIZADA' | 'CANCELADA'
+export type TipoDefensa = 'INTERNA' | 'PUBLICA'
 export type ResultadoDefensa =
   | 'APROBADO'
   | 'APROBADO_CON_OBSERVACIONES'
@@ -27,7 +30,9 @@ export interface DefensaResumen {
   id: number
   fecha_hora: string
   lugar: string
+  tipo_defensa: TipoDefensa
   estado: EstadoDefensa
+  /** null si quien consulta no es Director/DTC/Comité (ver resultado para el veredicto visible a todos). */
   calificacion: string | null
   resultado: ResultadoDefensa
 }
@@ -41,6 +46,33 @@ export interface Defensa extends DefensaResumen {
   creado_por_nombre: string | null
   created_at: string
   updated_at: string
+}
+
+export type EstadoMatriz = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA'
+
+export interface MatrizConsistencia {
+  id: number
+  proyecto: number
+  orden: number
+  tema: string
+  problematica: string
+  objetivos: string
+  estado: EstadoMatriz
+  decision_docente: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO'
+  motivo_rechazo_docente: string
+  decision_comite: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO'
+  motivo_rechazo_comite: string
+  /** Motivo de sistema: se usa cuando el estudiante elige otra matriz entre varias aprobadas. */
+  motivo_rechazo: string
+  elegida: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface MatrizInput {
+  tema: string
+  problematica: string
+  objetivos: string
 }
 
 export interface Proyecto {
@@ -60,6 +92,8 @@ export interface Proyecto {
   observaciones_pendientes: number
   tutor_nombre: string | null
   tribunal_nombres: string[]
+  matrices: MatrizConsistencia[]
+  formularios: Formulario[]
   defensa: DefensaResumen | null
   created_at: string
   updated_at: string

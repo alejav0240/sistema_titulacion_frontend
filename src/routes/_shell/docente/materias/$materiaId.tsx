@@ -1,20 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import { AuthGuard } from '#/components/auth/AuthGuard'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import { initials } from '#/components/layout/Topbar'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '#/components/ui/dialog'
+import { MatrizConsistenciaPanel } from '#/components/projects/MatrizConsistenciaPanel'
 import { useMateria, useMateriaEstudiantes } from '#/hooks/useMaterias'
-import { useAprobarPropuesta, useRechazarPropuesta } from '#/hooks/useProjects'
 import { cn } from '#/lib/utils'
-import type { Inscripcion } from '#/types/materia'
 
 export const Route = createFileRoute('/_shell/docente/materias/$materiaId')({
   component: RouteComponent,
@@ -41,11 +32,7 @@ function MateriaDocentePage() {
 
   const materia = useMateria(id)
   const inscripciones = useMateriaEstudiantes(id)
-  const aprobar = useAprobarPropuesta()
-  const rechazar = useRechazarPropuesta()
-
-  const [rechazoDe, setRechazoDe] = useState<Inscripcion | null>(null)
-  const [motivo, setMotivo] = useState('')
+  const [expandidoId, setExpandidoId] = useState<number | null>(null)
 
   const data = materia.data
   const lista = inscripciones.data ?? []
@@ -94,74 +81,63 @@ function MateriaDocentePage() {
         <div className="divide-y divide-outline-variant/50">
           {lista.map((inscripcion) => {
             const proyecto = inscripcion.proyecto
+            const expandido = expandidoId === inscripcion.id
             return (
-              <div key={inscripcion.id} className="flex items-center justify-between gap-md py-sm">
-                <div className="flex min-w-0 items-center gap-sm">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary-container text-[10px] font-bold text-on-secondary-container">
-                    {initials(inscripcion.estudiante_nombre)}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-label-md text-on-surface">{inscripcion.estudiante_nombre}</p>
-                    <p className="truncate text-label-sm text-outline">
-                      {proyecto ? proyecto.titulo : 'Sin propuesta de proyecto'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-sm">
-                  {proyecto && (
-                    <span
-                      className={cn(
-                        'rounded-full px-sm py-[2px] text-[10px] font-bold uppercase',
-                        ESTADO_STYLES[proyecto.estado_aprobacion],
-                      )}
-                    >
-                      {proyecto.estado_aprobacion}
+              <div key={inscripcion.id} className="py-sm">
+                <div className="flex items-center justify-between gap-md">
+                  <div className="flex min-w-0 items-center gap-sm">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary-container text-[10px] font-bold text-on-secondary-container">
+                      {initials(inscripcion.estudiante_nombre)}
                     </span>
-                  )}
-                  {proyecto?.estado_aprobacion === 'PENDIENTE' && (
-                    <>
+                    <div className="min-w-0">
+                      <p className="text-label-md text-on-surface">{inscripcion.estudiante_nombre}</p>
+                      <p className="truncate text-label-sm text-outline">{inscripcion.estudiante_email}</p>
+                      <p className="truncate text-label-sm text-outline">
+                        {proyecto?.titulo || (proyecto ? 'Tema pendiente' : 'Sin perfil registrado')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-sm">
+                    {proyecto && (
+                      <span
+                        className={cn(
+                          'rounded-full px-sm py-[2px] text-[10px] font-bold uppercase',
+                          ESTADO_STYLES[proyecto.estado_aprobacion],
+                        )}
+                      >
+                        {proyecto.estado_aprobacion}
+                      </span>
+                    )}
+                    {proyecto?.estado_aprobacion === 'PENDIENTE' && (
                       <button
                         type="button"
-                        disabled={aprobar.isPending}
+                        onClick={() => setExpandidoId(expandido ? null : inscripcion.id)}
+                        className="rounded-lg border border-primary px-md py-xs text-label-sm font-bold text-primary transition-all hover:bg-primary-container hover:text-on-primary"
+                      >
+                        {expandido ? 'Ocultar matrices' : 'Revisar matrices'}
+                      </button>
+                    )}
+                    {proyecto?.estado_aprobacion === 'APROBADO' && (
+                      <button
+                        type="button"
                         onClick={() =>
-                          aprobar.mutate(proyecto.id, {
-                            onSuccess: () => {
-                              toast.success('Propuesta aprobada.')
-                              inscripciones.refetch()
-                            },
+                          navigate({
+                            to: '/proyectos/$proyectoId',
+                            params: { proyectoId: String(proyecto.id) },
                           })
                         }
-                        className="rounded-lg bg-[#10B981] px-md py-xs text-label-sm font-bold text-[#fff] transition-all hover:brightness-110 disabled:opacity-50"
+                        className="rounded-lg border border-outline-variant px-md py-xs text-label-sm text-on-surface-variant transition-colors hover:text-primary"
                       >
-                        Aprobar
+                        Ver proyecto
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRechazoDe(inscripcion)
-                          setMotivo('')
-                        }}
-                        className="rounded-lg border border-error px-md py-xs text-label-sm font-bold text-error transition-all hover:bg-error-container"
-                      >
-                        Rechazar
-                      </button>
-                    </>
-                  )}
-                  {proyecto?.estado_aprobacion === 'APROBADO' && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        navigate({
-                          to: '/proyectos/$proyectoId',
-                          params: { proyectoId: String(proyecto.id) },
-                        })
-                      }
-                      className="rounded-lg border border-outline-variant px-md py-xs text-label-sm text-on-surface-variant transition-colors hover:text-primary"
-                    >
-                      Ver proyecto
-                    </button>
-                  )}
+                    )}
+                  </div>
                 </div>
+                {expandido && proyecto && (
+                  <div className="mt-sm">
+                    <MatrizConsistenciaPanel proyecto={proyecto} rolDecisor="DOCENTE" />
+                  </div>
+                )}
               </div>
             )
           })}
@@ -172,59 +148,6 @@ function MateriaDocentePage() {
           )}
         </div>
       </section>
-
-      <Dialog open={!!rechazoDe} onOpenChange={(o) => !o && setRechazoDe(null)}>
-        <DialogContent className="rounded-xl border-outline-variant sm:max-w-[28rem]">
-          <DialogHeader>
-            <DialogTitle className="text-headline-md text-error">Rechazar propuesta</DialogTitle>
-            <DialogDescription className="text-body-sm text-on-surface-variant">
-              {rechazoDe?.estudiante_nombre} — {rechazoDe?.proyecto?.titulo}
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            className="space-y-md"
-            onSubmit={(e) => {
-              e.preventDefault()
-              const proyectoId = rechazoDe?.proyecto?.id
-              if (!proyectoId) return
-              rechazar.mutate(
-                { proyectoId, motivo },
-                {
-                  onSuccess: () => {
-                    toast.success('Propuesta rechazada.')
-                    setRechazoDe(null)
-                    inscripciones.refetch()
-                  },
-                },
-              )
-            }}
-          >
-            <textarea
-              rows={3}
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Motivo del rechazo"
-              className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest p-md text-body-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary-container"
-            />
-            <div className="flex gap-sm">
-              <button
-                type="button"
-                onClick={() => setRechazoDe(null)}
-                className="flex-1 rounded-xl border border-outline-variant py-sm text-label-md font-bold text-on-surface-variant"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={rechazar.isPending}
-                className="flex-1 rounded-xl bg-error py-sm text-label-md font-bold text-on-error disabled:opacity-50"
-              >
-                {rechazar.isPending ? 'Rechazando…' : 'Rechazar'}
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

@@ -26,10 +26,13 @@ export function NuevoEventoModal({
   open,
   onClose,
   evento,
+  initialDescripcion,
 }: {
   open: boolean
   onClose: () => void
   evento?: EventoCronograma
+  /** Precarga tipo FORMULARIO + esta descripción (ej. "SUBIDA DE FORMULARIO 2"), usado al abrir desde "Habilitar". */
+  initialDescripcion?: string
 }) {
   const isEditing = !!evento
 
@@ -37,10 +40,14 @@ export function NuevoEventoModal({
   const [plantillaSearch, setPlantillaSearch] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
   const [tipo, setTipo] = useState('')
+  const [esFormulario, setEsFormulario] = useState(false)
+  const [carpetaUrl, setCarpetaUrl] = useState('')
   const [publicos, setPublicos] = useState<Set<string>>(new Set())
   const [gruposSel, setGruposSel] = useState<Set<number>>(new Set())
   const [fechaInicio, setFechaInicio] = useState('')
   const [fechaFin, setFechaFin] = useState('')
+  const [modoFin, setModoFin] = useState<'fecha' | 'dias'>('fecha')
+  const [diasDuracion, setDiasDuracion] = useState('')
 
   const grupos = useGrupos()
   const tipos = useTiposActividad()
@@ -51,14 +58,19 @@ export function NuevoEventoModal({
 
   useEffect(() => {
     if (!open) return
-    setDescripcion(evento?.descripcion ?? '')
-    setPlantillaSearch(evento?.descripcion ?? '')
-    setTipo(evento?.tipo ?? '')
+    const descripcionInicial = evento?.descripcion ?? initialDescripcion ?? ''
+    setDescripcion(descripcionInicial)
+    setPlantillaSearch(descripcionInicial)
+    setTipo(evento?.tipo ?? (initialDescripcion ? 'FORMULARIO' : ''))
+    setEsFormulario(evento?.tipo === 'FORMULARIO' || !!initialDescripcion)
+    setCarpetaUrl(evento?.carpeta_url ?? '')
     setPublicos(new Set(evento?.publicos ?? []))
     setGruposSel(new Set(evento?.grupos ?? []))
     setFechaInicio(evento?.fecha_inicio ?? '')
     setFechaFin(evento?.fecha_fin ?? '')
-  }, [open, evento])
+    setModoFin(evento?.dias_duracion ? 'dias' : 'fecha')
+    setDiasDuracion(evento?.dias_duracion ? String(evento.dias_duracion) : '')
+  }, [open, evento, initialDescripcion])
 
   const filteredPlantillas = (plantillas.data ?? []).filter((p) =>
     p.nombre.toLowerCase().includes(plantillaSearch.toLowerCase()),
@@ -120,10 +132,13 @@ export function NuevoEventoModal({
             const payload = {
               descripcion: descripcion.trim(),
               tipo: tipo.trim(),
+              carpeta_url: esFormulario ? carpetaUrl.trim() : '',
               publicos: [...publicos],
               grupos: [...gruposSel],
               fecha_inicio: fechaInicio,
-              fecha_fin: fechaFin || fechaInicio,
+              ...(modoFin === 'dias'
+                ? { dias_duracion: Number(diasDuracion) || 1 }
+                : { fecha_fin: fechaFin || fechaInicio, dias_duracion: null }),
               semestre: 1,
             }
             if (isEditing && evento) {
@@ -202,6 +217,26 @@ export function NuevoEventoModal({
                 <option key={t.id} value={t.nombre} />
               ))}
             </datalist>
+            <label className="flex items-center gap-xs text-body-sm text-on-surface">
+              <input
+                type="checkbox"
+                checked={esFormulario}
+                onChange={(e) => {
+                  setEsFormulario(e.target.checked)
+                  if (e.target.checked) setTipo('FORMULARIO')
+                }}
+              />
+              Es actividad de tipo Formulario
+            </label>
+            {esFormulario && (
+              <input
+                type="url"
+                value={carpetaUrl}
+                onChange={(e) => setCarpetaUrl(e.target.value)}
+                placeholder="Link de carpeta de OneDrive/Teams"
+                className={inputClass}
+              />
+            )}
           </div>
 
           {/* Públicos objetivo (multi) */}
@@ -259,23 +294,40 @@ export function NuevoEventoModal({
           </div>
 
           {/* Fechas */}
-          <div className="grid grid-cols-2 gap-md">
-            <div className="flex flex-col gap-xs">
-              <label className="text-label-md text-on-surface-variant" htmlFor="e-inicio">
-                Fecha inicio
+          <div className="flex flex-col gap-xs">
+            <label className="text-label-md text-on-surface-variant" htmlFor="e-inicio">
+              Fecha inicio
+            </label>
+            <input
+              id="e-inicio"
+              type="date"
+              value={fechaInicio}
+              onChange={(e) => setFechaInicio(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div className="flex flex-col gap-xs">
+            <span className="text-label-md text-on-surface-variant">Fin del evento</span>
+            <div className="flex gap-md">
+              <label className="flex items-center gap-xs text-body-sm text-on-surface">
+                <input
+                  type="radio"
+                  checked={modoFin === 'fecha'}
+                  onChange={() => setModoFin('fecha')}
+                />
+                Fecha fin
               </label>
-              <input
-                id="e-inicio"
-                type="date"
-                value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
-                className={inputClass}
-              />
+              <label className="flex items-center gap-xs text-body-sm text-on-surface">
+                <input
+                  type="radio"
+                  checked={modoFin === 'dias'}
+                  onChange={() => setModoFin('dias')}
+                />
+                Días de duración
+              </label>
             </div>
-            <div className="flex flex-col gap-xs">
-              <label className="text-label-md text-on-surface-variant" htmlFor="e-fin">
-                Fecha fin (opcional)
-              </label>
+            {modoFin === 'fecha' ? (
               <input
                 id="e-fin"
                 type="date"
@@ -284,7 +336,17 @@ export function NuevoEventoModal({
                 onChange={(e) => setFechaFin(e.target.value)}
                 className={inputClass}
               />
-            </div>
+            ) : (
+              <input
+                id="e-dias"
+                type="number"
+                min={1}
+                value={diasDuracion}
+                onChange={(e) => setDiasDuracion(e.target.value)}
+                placeholder="Ej. 7"
+                className={inputClass}
+              />
+            )}
           </div>
 
           <div className="flex justify-end gap-sm">
@@ -297,7 +359,10 @@ export function NuevoEventoModal({
             </button>
             <button
               type="submit"
-              disabled={pending || !descripcion.trim() || !tipo.trim() || !fechaInicio}
+              disabled={
+                pending || !descripcion.trim() || !tipo.trim() || !fechaInicio ||
+                (modoFin === 'dias' ? !diasDuracion : false)
+              }
               className="rounded-xl bg-primary-container px-lg py-sm text-label-md font-bold text-on-primary transition-all hover:brightness-110 disabled:opacity-50"
             >
               {pending ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Crear evento'}

@@ -76,10 +76,13 @@ export function useCreateTipo() {
 export interface EventoPayload {
   descripcion: string
   tipo: string
+  carpeta_url?: string
   publicos: string[]
   grupos: number[]
+  usuarios?: number[]
   fecha_inicio: string
-  fecha_fin: string
+  fecha_fin?: string
+  dias_duracion?: number | null
   semestre: number
 }
 

@@ -212,7 +212,7 @@ function ProyectosPage() {
                 >
                   <td className="max-w-[260px] px-md py-md">
                     <p className="truncate text-label-md font-bold text-on-surface">
-                      {proyecto.titulo}
+                      {proyecto.titulo || 'Tema pendiente'}
                     </p>
                     <p className="text-[10px] uppercase tracking-wider text-outline">
                       {proyecto.codigo}

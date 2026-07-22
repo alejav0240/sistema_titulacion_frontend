@@ -20,7 +20,7 @@ export const Route = createFileRoute('/_shell/admin/materias/$materiaId')({
 
 function RouteComponent() {
   return (
-    <AuthGuard allowedRoles={['DIRECTOR', 'DTC']}>
+    <AuthGuard allowedRoles={['DIRECTOR', 'DTC', 'COMITE_EVALUACION']}>
       <MateriaDetailPage />
     </AuthGuard>
   )

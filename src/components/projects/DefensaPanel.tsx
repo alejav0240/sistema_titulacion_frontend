@@ -111,14 +111,22 @@ export function DefensaPanel({
               <p className="text-label-sm uppercase tracking-wider text-outline">
                 Resultado
               </p>
-              <p className="mt-xs text-headline-md font-bold text-primary">
-                {data.calificacion ?? '—'}
-                <span className="text-body-sm font-normal text-on-surface-variant">
-                  {' '}
-                  / 100
-                </span>
-              </p>
-              <p className="text-label-md text-on-surface">
+              {isAdmin && (
+                <p className="mt-xs text-headline-md font-bold text-primary">
+                  {data.calificacion ?? '—'}
+                  <span className="text-body-sm font-normal text-on-surface-variant">
+                    {' '}
+                    / 100
+                  </span>
+                </p>
+              )}
+              <p
+                className={cn(
+                  'text-label-md font-bold',
+                  data.resultado === 'APROBADO' ? 'text-emerald-700 dark:text-emerald-400' : 'text-error',
+                  !isAdmin && 'mt-xs',
+                )}
+              >
                 {RESULTADO_DEFENSA_LABELS[data.resultado] ?? '—'}
               </p>
               {data.acta_url && (
@@ -217,18 +225,18 @@ function DefensaModal({
 
   const [fecha, setFecha] = useState('')
   const [lugar, setLugar] = useState('')
+  const [tipoDefensa, setTipoDefensa] = useState<'INTERNA' | 'PUBLICA'>('INTERNA')
   const [observaciones, setObservaciones] = useState('')
   const [calificacion, setCalificacion] = useState('')
-  const [resultado, setResultado] = useState('APROBADO')
   const [actaUrl, setActaUrl] = useState('')
 
   useEffect(() => {
     if (!mode) return
     setFecha(toLocalInput(defensa?.fecha_hora))
     setLugar(defensa?.lugar ?? '')
+    setTipoDefensa(defensa?.tipo_defensa ?? 'INTERNA')
     setObservaciones(defensa?.observaciones ?? '')
     setCalificacion(defensa?.calificacion ?? '')
-    setResultado(defensa?.resultado || 'APROBADO')
     setActaUrl(defensa?.acta_url ?? '')
   }, [mode, defensa])
 
@@ -240,6 +248,7 @@ function DefensaModal({
         proyectoId,
         fecha_hora: new Date(fecha).toISOString(),
         lugar,
+        tipo_defensa: tipoDefensa,
         observaciones,
       }
       const action = defensa ? actualizar : programar
@@ -257,7 +266,6 @@ function DefensaModal({
           proyectoId,
           estado: 'REALIZADA',
           calificacion,
-          resultado,
           acta_url: actaUrl,
           observaciones,
         },
@@ -316,46 +324,52 @@ function DefensaModal({
                   className={inputClass}
                 />
               </div>
+              <div className="flex flex-col gap-xs">
+                <label className="text-label-md text-on-surface-variant">Tipo de defensa</label>
+                <div className="flex gap-md">
+                  <label className="flex items-center gap-xs text-body-sm text-on-surface">
+                    <input
+                      type="radio"
+                      checked={tipoDefensa === 'INTERNA'}
+                      onChange={() => setTipoDefensa('INTERNA')}
+                    />
+                    Interna (el proyecto continúa)
+                  </label>
+                  <label className="flex items-center gap-xs text-body-sm text-on-surface">
+                    <input
+                      type="radio"
+                      checked={tipoDefensa === 'PUBLICA'}
+                      onChange={() => setTipoDefensa('PUBLICA')}
+                    />
+                    Pública (concluye el proyecto)
+                  </label>
+                </div>
+                <p className="text-label-sm text-outline">
+                  La defensa interna se habilita cuando el formulario F3 está completo.
+                </p>
+              </div>
             </>
           )}
 
           {mode === 'resultado' && (
             <>
-              <div className="grid grid-cols-2 gap-md">
-                <div className="flex flex-col gap-xs">
-                  <label className="text-label-md text-on-surface-variant" htmlFor="nota">
-                    Calificación (0–100)
-                  </label>
-                  <input
-                    id="nota"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step="0.01"
-                    value={calificacion}
-                    onChange={(e) => setCalificacion(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-                <div className="flex flex-col gap-xs">
-                  <label className="text-label-md text-on-surface-variant" htmlFor="resultado">
-                    Resultado
-                  </label>
-                  <select
-                    id="resultado"
-                    value={resultado}
-                    onChange={(e) => setResultado(e.target.value)}
-                    className={inputClass}
-                  >
-                    {Object.entries(RESULTADO_DEFENSA_LABELS).map(
-                      ([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </div>
+              <div className="flex flex-col gap-xs">
+                <label className="text-label-md text-on-surface-variant" htmlFor="nota">
+                  Calificación (0–100)
+                </label>
+                <input
+                  id="nota"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  value={calificacion}
+                  onChange={(e) => setCalificacion(e.target.value)}
+                  className={inputClass}
+                />
+                <p className="text-label-sm text-outline">
+                  Aprobado desde 51; el resultado se calcula automáticamente.
+                </p>
               </div>
               <div className="flex flex-col gap-xs">
                 <label className="text-label-md text-on-surface-variant" htmlFor="acta">
