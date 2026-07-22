@@ -20,21 +20,23 @@ import { Route as ShellCronogramaRouteImport } from './routes/_shell/cronograma'
 import { Route as ShellStudentIndexRouteImport } from './routes/_shell/student/index'
 import { Route as ShellRevisionIndexRouteImport } from './routes/_shell/revision/index'
 import { Route as ShellProyectosIndexRouteImport } from './routes/_shell/proyectos/index'
+import { Route as ShellFormulariosIndexRouteImport } from './routes/_shell/formularios/index'
 import { Route as ShellDocenteIndexRouteImport } from './routes/_shell/docente/index'
 import { Route as ShellAdminIndexRouteImport } from './routes/_shell/admin/index'
 import { Route as ShellRevisionVersionIdRouteImport } from './routes/_shell/revision/$versionId'
 import { Route as ShellProyectosProyectoIdRouteImport } from './routes/_shell/proyectos/$proyectoId'
+import { Route as ShellFormulariosMateriaIdRouteImport } from './routes/_shell/formularios/$materiaId'
 import { Route as ShellDocenteTutoradosRouteImport } from './routes/_shell/docente/tutorados'
 import { Route as ShellDocenteTribunadosRouteImport } from './routes/_shell/docente/tribunados'
-import { Route as ShellAdminUsuariosRouteImport } from './routes/_shell/admin/usuarios'
 import { Route as ShellAdminReportesRouteImport } from './routes/_shell/admin/reportes'
+import { Route as ShellAdminDocentesRouteImport } from './routes/_shell/admin/docentes'
 import { Route as ShellDocenteMateriasIndexRouteImport } from './routes/_shell/docente/materias/index'
 import { Route as ShellAdminMateriasIndexRouteImport } from './routes/_shell/admin/materias/index'
 import { Route as ShellAdminGruposIndexRouteImport } from './routes/_shell/admin/grupos/index'
 import { Route as ShellDocenteMateriasMateriaIdRouteImport } from './routes/_shell/docente/materias/$materiaId'
-import { Route as ShellAdminUsuariosUsuarioIdRouteImport } from './routes/_shell/admin/usuarios_.$usuarioId'
 import { Route as ShellAdminMateriasMateriaIdRouteImport } from './routes/_shell/admin/materias/$materiaId'
 import { Route as ShellAdminGruposGrupoIdRouteImport } from './routes/_shell/admin/grupos/$grupoId'
+import { Route as ShellAdminDocentesDocenteIdRouteImport } from './routes/_shell/admin/docentes_.$docenteId'
 
 const ShellRoute = ShellRouteImport.update({
   id: '/_shell',
@@ -90,6 +92,11 @@ const ShellProyectosIndexRoute = ShellProyectosIndexRouteImport.update({
   path: '/proyectos/',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellFormulariosIndexRoute = ShellFormulariosIndexRouteImport.update({
+  id: '/formularios/',
+  path: '/formularios/',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellDocenteIndexRoute = ShellDocenteIndexRouteImport.update({
   id: '/docente/',
   path: '/docente/',
@@ -111,6 +118,12 @@ const ShellProyectosProyectoIdRoute =
     path: '/proyectos/$proyectoId',
     getParentRoute: () => ShellRoute,
   } as any)
+const ShellFormulariosMateriaIdRoute =
+  ShellFormulariosMateriaIdRouteImport.update({
+    id: '/formularios/$materiaId',
+    path: '/formularios/$materiaId',
+    getParentRoute: () => ShellRoute,
+  } as any)
 const ShellDocenteTutoradosRoute = ShellDocenteTutoradosRouteImport.update({
   id: '/docente/tutorados',
   path: '/docente/tutorados',
@@ -121,14 +134,14 @@ const ShellDocenteTribunadosRoute = ShellDocenteTribunadosRouteImport.update({
   path: '/docente/tribunados',
   getParentRoute: () => ShellRoute,
 } as any)
-const ShellAdminUsuariosRoute = ShellAdminUsuariosRouteImport.update({
-  id: '/admin/usuarios',
-  path: '/admin/usuarios',
-  getParentRoute: () => ShellRoute,
-} as any)
 const ShellAdminReportesRoute = ShellAdminReportesRouteImport.update({
   id: '/admin/reportes',
   path: '/admin/reportes',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAdminDocentesRoute = ShellAdminDocentesRouteImport.update({
+  id: '/admin/docentes',
+  path: '/admin/docentes',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellDocenteMateriasIndexRoute =
@@ -153,12 +166,6 @@ const ShellDocenteMateriasMateriaIdRoute =
     path: '/docente/materias/$materiaId',
     getParentRoute: () => ShellRoute,
   } as any)
-const ShellAdminUsuariosUsuarioIdRoute =
-  ShellAdminUsuariosUsuarioIdRouteImport.update({
-    id: '/admin/usuarios_/$usuarioId',
-    path: '/admin/usuarios/$usuarioId',
-    getParentRoute: () => ShellRoute,
-  } as any)
 const ShellAdminMateriasMateriaIdRoute =
   ShellAdminMateriasMateriaIdRouteImport.update({
     id: '/admin/materias/$materiaId',
@@ -170,6 +177,12 @@ const ShellAdminGruposGrupoIdRoute = ShellAdminGruposGrupoIdRouteImport.update({
   path: '/admin/grupos/$grupoId',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellAdminDocentesDocenteIdRoute =
+  ShellAdminDocentesDocenteIdRouteImport.update({
+    id: '/admin/docentes_/$docenteId',
+    path: '/admin/docentes/$docenteId',
+    getParentRoute: () => ShellRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -179,20 +192,22 @@ export interface FileRoutesByFullPath {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/admin/docentes': typeof ShellAdminDocentesRoute
   '/admin/reportes': typeof ShellAdminReportesRoute
-  '/admin/usuarios': typeof ShellAdminUsuariosRoute
   '/docente/tribunados': typeof ShellDocenteTribunadosRoute
   '/docente/tutorados': typeof ShellDocenteTutoradosRoute
+  '/formularios/$materiaId': typeof ShellFormulariosMateriaIdRoute
   '/proyectos/$proyectoId': typeof ShellProyectosProyectoIdRoute
   '/revision/$versionId': typeof ShellRevisionVersionIdRoute
   '/admin/': typeof ShellAdminIndexRoute
   '/docente/': typeof ShellDocenteIndexRoute
+  '/formularios/': typeof ShellFormulariosIndexRoute
   '/proyectos/': typeof ShellProyectosIndexRoute
   '/revision/': typeof ShellRevisionIndexRoute
   '/student/': typeof ShellStudentIndexRoute
+  '/admin/docentes/$docenteId': typeof ShellAdminDocentesDocenteIdRoute
   '/admin/grupos/$grupoId': typeof ShellAdminGruposGrupoIdRoute
   '/admin/materias/$materiaId': typeof ShellAdminMateriasMateriaIdRoute
-  '/admin/usuarios/$usuarioId': typeof ShellAdminUsuariosUsuarioIdRoute
   '/docente/materias/$materiaId': typeof ShellDocenteMateriasMateriaIdRoute
   '/admin/grupos/': typeof ShellAdminGruposIndexRoute
   '/admin/materias/': typeof ShellAdminMateriasIndexRoute
@@ -206,20 +221,22 @@ export interface FileRoutesByTo {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/admin/docentes': typeof ShellAdminDocentesRoute
   '/admin/reportes': typeof ShellAdminReportesRoute
-  '/admin/usuarios': typeof ShellAdminUsuariosRoute
   '/docente/tribunados': typeof ShellDocenteTribunadosRoute
   '/docente/tutorados': typeof ShellDocenteTutoradosRoute
+  '/formularios/$materiaId': typeof ShellFormulariosMateriaIdRoute
   '/proyectos/$proyectoId': typeof ShellProyectosProyectoIdRoute
   '/revision/$versionId': typeof ShellRevisionVersionIdRoute
   '/admin': typeof ShellAdminIndexRoute
   '/docente': typeof ShellDocenteIndexRoute
+  '/formularios': typeof ShellFormulariosIndexRoute
   '/proyectos': typeof ShellProyectosIndexRoute
   '/revision': typeof ShellRevisionIndexRoute
   '/student': typeof ShellStudentIndexRoute
+  '/admin/docentes/$docenteId': typeof ShellAdminDocentesDocenteIdRoute
   '/admin/grupos/$grupoId': typeof ShellAdminGruposGrupoIdRoute
   '/admin/materias/$materiaId': typeof ShellAdminMateriasMateriaIdRoute
-  '/admin/usuarios/$usuarioId': typeof ShellAdminUsuariosUsuarioIdRoute
   '/docente/materias/$materiaId': typeof ShellDocenteMateriasMateriaIdRoute
   '/admin/grupos': typeof ShellAdminGruposIndexRoute
   '/admin/materias': typeof ShellAdminMateriasIndexRoute
@@ -235,20 +252,22 @@ export interface FileRoutesById {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/_shell/admin/docentes': typeof ShellAdminDocentesRoute
   '/_shell/admin/reportes': typeof ShellAdminReportesRoute
-  '/_shell/admin/usuarios': typeof ShellAdminUsuariosRoute
   '/_shell/docente/tribunados': typeof ShellDocenteTribunadosRoute
   '/_shell/docente/tutorados': typeof ShellDocenteTutoradosRoute
+  '/_shell/formularios/$materiaId': typeof ShellFormulariosMateriaIdRoute
   '/_shell/proyectos/$proyectoId': typeof ShellProyectosProyectoIdRoute
   '/_shell/revision/$versionId': typeof ShellRevisionVersionIdRoute
   '/_shell/admin/': typeof ShellAdminIndexRoute
   '/_shell/docente/': typeof ShellDocenteIndexRoute
+  '/_shell/formularios/': typeof ShellFormulariosIndexRoute
   '/_shell/proyectos/': typeof ShellProyectosIndexRoute
   '/_shell/revision/': typeof ShellRevisionIndexRoute
   '/_shell/student/': typeof ShellStudentIndexRoute
+  '/_shell/admin/docentes_/$docenteId': typeof ShellAdminDocentesDocenteIdRoute
   '/_shell/admin/grupos/$grupoId': typeof ShellAdminGruposGrupoIdRoute
   '/_shell/admin/materias/$materiaId': typeof ShellAdminMateriasMateriaIdRoute
-  '/_shell/admin/usuarios_/$usuarioId': typeof ShellAdminUsuariosUsuarioIdRoute
   '/_shell/docente/materias/$materiaId': typeof ShellDocenteMateriasMateriaIdRoute
   '/_shell/admin/grupos/': typeof ShellAdminGruposIndexRoute
   '/_shell/admin/materias/': typeof ShellAdminMateriasIndexRoute
@@ -264,20 +283,22 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/reset-password'
+    | '/admin/docentes'
     | '/admin/reportes'
-    | '/admin/usuarios'
     | '/docente/tribunados'
     | '/docente/tutorados'
+    | '/formularios/$materiaId'
     | '/proyectos/$proyectoId'
     | '/revision/$versionId'
     | '/admin/'
     | '/docente/'
+    | '/formularios/'
     | '/proyectos/'
     | '/revision/'
     | '/student/'
+    | '/admin/docentes/$docenteId'
     | '/admin/grupos/$grupoId'
     | '/admin/materias/$materiaId'
-    | '/admin/usuarios/$usuarioId'
     | '/docente/materias/$materiaId'
     | '/admin/grupos/'
     | '/admin/materias/'
@@ -291,20 +312,22 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/reset-password'
+    | '/admin/docentes'
     | '/admin/reportes'
-    | '/admin/usuarios'
     | '/docente/tribunados'
     | '/docente/tutorados'
+    | '/formularios/$materiaId'
     | '/proyectos/$proyectoId'
     | '/revision/$versionId'
     | '/admin'
     | '/docente'
+    | '/formularios'
     | '/proyectos'
     | '/revision'
     | '/student'
+    | '/admin/docentes/$docenteId'
     | '/admin/grupos/$grupoId'
     | '/admin/materias/$materiaId'
-    | '/admin/usuarios/$usuarioId'
     | '/docente/materias/$materiaId'
     | '/admin/grupos'
     | '/admin/materias'
@@ -319,20 +342,22 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/reset-password'
+    | '/_shell/admin/docentes'
     | '/_shell/admin/reportes'
-    | '/_shell/admin/usuarios'
     | '/_shell/docente/tribunados'
     | '/_shell/docente/tutorados'
+    | '/_shell/formularios/$materiaId'
     | '/_shell/proyectos/$proyectoId'
     | '/_shell/revision/$versionId'
     | '/_shell/admin/'
     | '/_shell/docente/'
+    | '/_shell/formularios/'
     | '/_shell/proyectos/'
     | '/_shell/revision/'
     | '/_shell/student/'
+    | '/_shell/admin/docentes_/$docenteId'
     | '/_shell/admin/grupos/$grupoId'
     | '/_shell/admin/materias/$materiaId'
-    | '/_shell/admin/usuarios_/$usuarioId'
     | '/_shell/docente/materias/$materiaId'
     | '/_shell/admin/grupos/'
     | '/_shell/admin/materias/'
@@ -426,6 +451,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellProyectosIndexRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/formularios/': {
+      id: '/_shell/formularios/'
+      path: '/formularios'
+      fullPath: '/formularios/'
+      preLoaderRoute: typeof ShellFormulariosIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/docente/': {
       id: '/_shell/docente/'
       path: '/docente'
@@ -454,6 +486,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellProyectosProyectoIdRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/formularios/$materiaId': {
+      id: '/_shell/formularios/$materiaId'
+      path: '/formularios/$materiaId'
+      fullPath: '/formularios/$materiaId'
+      preLoaderRoute: typeof ShellFormulariosMateriaIdRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/docente/tutorados': {
       id: '/_shell/docente/tutorados'
       path: '/docente/tutorados'
@@ -468,18 +507,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellDocenteTribunadosRouteImport
       parentRoute: typeof ShellRoute
     }
-    '/_shell/admin/usuarios': {
-      id: '/_shell/admin/usuarios'
-      path: '/admin/usuarios'
-      fullPath: '/admin/usuarios'
-      preLoaderRoute: typeof ShellAdminUsuariosRouteImport
-      parentRoute: typeof ShellRoute
-    }
     '/_shell/admin/reportes': {
       id: '/_shell/admin/reportes'
       path: '/admin/reportes'
       fullPath: '/admin/reportes'
       preLoaderRoute: typeof ShellAdminReportesRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/admin/docentes': {
+      id: '/_shell/admin/docentes'
+      path: '/admin/docentes'
+      fullPath: '/admin/docentes'
+      preLoaderRoute: typeof ShellAdminDocentesRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/docente/materias/': {
@@ -510,13 +549,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellDocenteMateriasMateriaIdRouteImport
       parentRoute: typeof ShellRoute
     }
-    '/_shell/admin/usuarios_/$usuarioId': {
-      id: '/_shell/admin/usuarios_/$usuarioId'
-      path: '/admin/usuarios/$usuarioId'
-      fullPath: '/admin/usuarios/$usuarioId'
-      preLoaderRoute: typeof ShellAdminUsuariosUsuarioIdRouteImport
-      parentRoute: typeof ShellRoute
-    }
     '/_shell/admin/materias/$materiaId': {
       id: '/_shell/admin/materias/$materiaId'
       path: '/admin/materias/$materiaId'
@@ -531,6 +563,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellAdminGruposGrupoIdRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/admin/docentes_/$docenteId': {
+      id: '/_shell/admin/docentes_/$docenteId'
+      path: '/admin/docentes/$docenteId'
+      fullPath: '/admin/docentes/$docenteId'
+      preLoaderRoute: typeof ShellAdminDocentesDocenteIdRouteImport
+      parentRoute: typeof ShellRoute
+    }
   }
 }
 
@@ -538,20 +577,22 @@ interface ShellRouteChildren {
   ShellCronogramaRoute: typeof ShellCronogramaRoute
   ShellNotificacionesRoute: typeof ShellNotificacionesRoute
   ShellPerfilRoute: typeof ShellPerfilRoute
+  ShellAdminDocentesRoute: typeof ShellAdminDocentesRoute
   ShellAdminReportesRoute: typeof ShellAdminReportesRoute
-  ShellAdminUsuariosRoute: typeof ShellAdminUsuariosRoute
   ShellDocenteTribunadosRoute: typeof ShellDocenteTribunadosRoute
   ShellDocenteTutoradosRoute: typeof ShellDocenteTutoradosRoute
+  ShellFormulariosMateriaIdRoute: typeof ShellFormulariosMateriaIdRoute
   ShellProyectosProyectoIdRoute: typeof ShellProyectosProyectoIdRoute
   ShellRevisionVersionIdRoute: typeof ShellRevisionVersionIdRoute
   ShellAdminIndexRoute: typeof ShellAdminIndexRoute
   ShellDocenteIndexRoute: typeof ShellDocenteIndexRoute
+  ShellFormulariosIndexRoute: typeof ShellFormulariosIndexRoute
   ShellProyectosIndexRoute: typeof ShellProyectosIndexRoute
   ShellRevisionIndexRoute: typeof ShellRevisionIndexRoute
   ShellStudentIndexRoute: typeof ShellStudentIndexRoute
+  ShellAdminDocentesDocenteIdRoute: typeof ShellAdminDocentesDocenteIdRoute
   ShellAdminGruposGrupoIdRoute: typeof ShellAdminGruposGrupoIdRoute
   ShellAdminMateriasMateriaIdRoute: typeof ShellAdminMateriasMateriaIdRoute
-  ShellAdminUsuariosUsuarioIdRoute: typeof ShellAdminUsuariosUsuarioIdRoute
   ShellDocenteMateriasMateriaIdRoute: typeof ShellDocenteMateriasMateriaIdRoute
   ShellAdminGruposIndexRoute: typeof ShellAdminGruposIndexRoute
   ShellAdminMateriasIndexRoute: typeof ShellAdminMateriasIndexRoute
@@ -562,20 +603,22 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellCronogramaRoute: ShellCronogramaRoute,
   ShellNotificacionesRoute: ShellNotificacionesRoute,
   ShellPerfilRoute: ShellPerfilRoute,
+  ShellAdminDocentesRoute: ShellAdminDocentesRoute,
   ShellAdminReportesRoute: ShellAdminReportesRoute,
-  ShellAdminUsuariosRoute: ShellAdminUsuariosRoute,
   ShellDocenteTribunadosRoute: ShellDocenteTribunadosRoute,
   ShellDocenteTutoradosRoute: ShellDocenteTutoradosRoute,
+  ShellFormulariosMateriaIdRoute: ShellFormulariosMateriaIdRoute,
   ShellProyectosProyectoIdRoute: ShellProyectosProyectoIdRoute,
   ShellRevisionVersionIdRoute: ShellRevisionVersionIdRoute,
   ShellAdminIndexRoute: ShellAdminIndexRoute,
   ShellDocenteIndexRoute: ShellDocenteIndexRoute,
+  ShellFormulariosIndexRoute: ShellFormulariosIndexRoute,
   ShellProyectosIndexRoute: ShellProyectosIndexRoute,
   ShellRevisionIndexRoute: ShellRevisionIndexRoute,
   ShellStudentIndexRoute: ShellStudentIndexRoute,
+  ShellAdminDocentesDocenteIdRoute: ShellAdminDocentesDocenteIdRoute,
   ShellAdminGruposGrupoIdRoute: ShellAdminGruposGrupoIdRoute,
   ShellAdminMateriasMateriaIdRoute: ShellAdminMateriasMateriaIdRoute,
-  ShellAdminUsuariosUsuarioIdRoute: ShellAdminUsuariosUsuarioIdRoute,
   ShellDocenteMateriasMateriaIdRoute: ShellDocenteMateriasMateriaIdRoute,
   ShellAdminGruposIndexRoute: ShellAdminGruposIndexRoute,
   ShellAdminMateriasIndexRoute: ShellAdminMateriasIndexRoute,

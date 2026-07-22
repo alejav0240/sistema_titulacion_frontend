@@ -5,6 +5,7 @@ export type Rol =
   | 'ESTUDIANTE'
   | 'DIRECTOR'
   | 'DTC'
+  | 'COMITE_EVALUACION'
 
 export interface Usuario {
   id: number
@@ -17,6 +18,10 @@ export interface Usuario {
   cupos_tribunal: number
   tutorados_activos: number
   tribunales_activos: number
+  /** Puntaje crudo 1-5; null si el rol del que consulta no es Director/DTC/Comité. */
+  fortaleza_docente: number | null
+  /** "Tribunal Metodológico" (<=3) o "Tribunal de Proyecto" (>=4); null si nunca se asignó puntaje. */
+  nivel_tribunal: string | null
   is_active: boolean
   is_staff: boolean
   created_at: string
@@ -45,6 +50,7 @@ export interface UsuarioUpdate {
   capacidades?: string[]
   cupos_tutor?: number
   cupos_tribunal?: number
+  fortaleza_docente?: number | null
   is_active?: boolean
   password?: string
 }

@@ -8,27 +8,27 @@ import { StatusBadge } from '#/components/projects/StatusBadge'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import { initials } from '#/components/layout/Topbar'
 import { useUser, useUpdateUser } from '#/hooks/useUsers'
-import { useRelaciones } from '#/hooks/useRelaciones'
+import { useCuposSugeridos, useRelaciones } from '#/hooks/useRelaciones'
 import api from '#/lib/api'
 import { formatDate } from '#/lib/datetime'
 import type { Proyecto, ProyectosResponse } from '#/types/project'
 
-export const Route = createFileRoute('/_shell/admin/usuarios_/$usuarioId')({
+export const Route = createFileRoute('/_shell/admin/docentes_/$docenteId')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
   return (
-    <AuthGuard allowedRoles={['DIRECTOR', 'DTC']}>
+    <AuthGuard allowedRoles={['DIRECTOR', 'DTC', 'COMITE_EVALUACION']}>
       <UserProfilePage />
     </AuthGuard>
   )
 }
 
 function UserProfilePage() {
-  const { usuarioId } = Route.useParams()
+  const { docenteId } = Route.useParams()
   const navigate = useNavigate()
-  const id = Number(usuarioId)
+  const id = Number(docenteId)
   const user = useUser(id)
 
   const esEstudiante = user.data?.rol === 'ESTUDIANTE'
@@ -69,11 +69,11 @@ function UserProfilePage() {
     <div className="space-y-lg">
       <button
         type="button"
-        onClick={() => navigate({ to: '/admin/usuarios' })}
+        onClick={() => navigate({ to: '/admin/docentes' })}
         className="flex items-center gap-xs text-label-md text-secondary hover:text-primary"
       >
         <MaterialIcon name="arrow_back" size={16} />
-        Volver a Usuarios
+        Volver a Docentes
       </button>
 
       {/* Cabecera de perfil */}
@@ -136,11 +136,12 @@ function UserProfilePage() {
           userId={id}
           cuposTutor={data.cupos_tutor ?? 0}
           cuposTribunal={data.cupos_tribunal ?? 0}
+          fortalezaDocente={data.fortaleza_docente}
           tutoradosActivos={data.tutorados_activos ?? tutorias.length}
           tribunalesActivos={data.tribunales_activos ?? tribunales.length}
-          onSave={(cupos_tutor, cupos_tribunal) =>
+          onSave={(cupos_tutor, cupos_tribunal, fortaleza_docente) =>
             updateUser.mutate(
-              { id, cupos_tutor, cupos_tribunal },
+              { id, cupos_tutor, cupos_tribunal, fortaleza_docente },
               { onSuccess: () => { toast.success('Cupos actualizados.'); user.refetch() } },
             )
           }
@@ -164,7 +165,7 @@ function UserProfilePage() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-label-md font-bold text-on-surface">
-                      {proyecto.titulo}
+                      {proyecto.titulo || 'Tema pendiente'}
                     </p>
                     <p className="text-label-sm text-outline">
                       {proyecto.codigo} · Tutor: {proyecto.tutor_nombre ?? '—'}
@@ -240,6 +241,7 @@ function UserProfilePage() {
 function CuposPanel({
   cuposTutor,
   cuposTribunal,
+  fortalezaDocente,
   tutoradosActivos,
   tribunalesActivos,
   onSave,
@@ -248,13 +250,16 @@ function CuposPanel({
   userId: number
   cuposTutor: number
   cuposTribunal: number
+  fortalezaDocente: number | null
   tutoradosActivos: number
   tribunalesActivos: number
-  onSave: (tutor: number, tribunal: number) => void
+  onSave: (tutor: number, tribunal: number, fortaleza: number | null) => void
   saving: boolean
 }) {
   const [tutor, setTutor] = useState(cuposTutor)
   const [tribunal, setTribunal] = useState(cuposTribunal)
+  const [fortaleza, setFortaleza] = useState(fortalezaDocente)
+  const sugeridos = useCuposSugeridos()
 
   return (
     <section className="rounded-xl border border-outline-variant bg-white p-lg">
@@ -291,10 +296,43 @@ function CuposPanel({
           <p className="mt-xs text-[10px] text-outline">0 = sin límite</p>
         </div>
       </div>
+      {sugeridos.data && (
+        <button
+          type="button"
+          onClick={() => {
+            setTutor(sugeridos.data.sugerido)
+            setTribunal(sugeridos.data.sugerido)
+          }}
+          className="mt-sm text-label-sm font-bold text-primary hover:underline"
+        >
+          Usar sugerido ({sugeridos.data.sugerido} = {sugeridos.data.estudiantes_taller1} inscritos en
+          Taller I / {sugeridos.data.docentes} docentes)
+        </button>
+      )}
+
+      <div className="mt-md rounded-xl bg-surface-container-low p-md">
+        <p className="text-label-sm text-outline">Fortaleza docente (1-5)</p>
+        <p className="mt-xs text-label-sm text-on-surface-variant">
+          {fortaleza && fortaleza >= 4 ? 'Tribunal de Proyecto' : fortaleza ? 'Tribunal Metodológico' : 'Sin puntaje asignado'}
+        </p>
+        <select
+          value={fortaleza ?? ''}
+          onChange={(e) => setFortaleza(e.target.value ? Number(e.target.value) : null)}
+          className="mt-sm h-10 w-full rounded-lg border border-outline-variant bg-white px-sm text-body-md outline-none focus:border-primary"
+        >
+          <option value="">Sin asignar</option>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <option key={n} value={n}>
+              {n} — {n >= 4 ? 'Tribunal de Proyecto' : 'Tribunal Metodológico'}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <button
         type="button"
         disabled={saving}
-        onClick={() => onSave(tutor, tribunal)}
+        onClick={() => onSave(tutor, tribunal, fortaleza)}
         className="mt-md flex items-center gap-sm rounded-lg bg-primary-container px-lg py-sm text-label-md font-bold text-on-primary transition-all hover:brightness-110 disabled:opacity-50"
       >
         <MaterialIcon name="save" size={16} />

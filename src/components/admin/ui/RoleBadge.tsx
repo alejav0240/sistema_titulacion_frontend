@@ -7,6 +7,7 @@ const roleColors: Record<string, string> = {
   ESTUDIANTE: 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300',
   DIRECTOR: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
   DTC: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',
+  COMITE_EVALUACION: 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300',
 }
 
 interface RoleBadgeProps {

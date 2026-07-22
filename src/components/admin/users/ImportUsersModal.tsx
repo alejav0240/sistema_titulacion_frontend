@@ -15,12 +15,12 @@ export function ImportUsersModal({
       open={open}
       onOpenChange={onOpenChange}
       title="Importar Docentes"
-      columns={['nombre', 'email', 'cupostutor', 'cupostribunal']}
+      columns={['nombre', 'email', 'cupostutor', 'cupostribunal', 'fortalezadocente']}
       exampleRows={[
-        'Juan Perez,juan@university.edu,5,3',
-        'Ana Lopez,ana@university.edu,0,0',
+        'Juan Perez,juan@university.edu,5,3,4',
+        'Ana Lopez,ana@university.edu,0,0,2',
       ]}
-      helpText="Los cupos en 0 significan sin límite. El rol asignado será DOCENTE."
+      helpText="Los cupos en 0 significan sin límite. FortalezaDocente es opcional, de 1 a 5. El rol asignado será DOCENTE."
       onImport={(file) => importMutation.mutateAsync(file)}
       pending={importMutation.isPending}
     />

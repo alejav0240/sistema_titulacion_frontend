@@ -6,24 +6,29 @@ import { UserFilters } from '#/components/admin/users/UserFilters'
 import { UserTable } from '#/components/admin/users/UserTable'
 import { UserModal } from '#/components/admin/users/UserModal'
 import { ImportUsersModal } from '#/components/admin/users/ImportUsersModal'
+import { TuplasPanel } from '#/components/admin/users/TuplasPanel'
 import { Button } from '#/components/ui/button'
 import { Plus, Upload } from 'lucide-react'
 import { useUsers, useDeactivateUser, useActivateUser } from '#/hooks/useUsers'
+import { useDebouncedValue } from '#/hooks/useDebouncedValue'
 import type { Usuario } from '#/types/user'
 import { AuthGuard } from '#/components/auth/AuthGuard'
 import { authStore } from '#/hooks/useAuthStore'
 
-export const Route = createFileRoute('/_shell/admin/usuarios')({
+export const Route = createFileRoute('/_shell/admin/docentes')({
   component: UsuariosPage,
 })
 
 function UsuariosPage() {
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [filters, setFilters] = useState<{
     rol?: string
     estado?: string
     search?: string
   }>({})
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(search.trim(), 300)
   const [modalOpen, setModalOpen] = useState(false)
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<Usuario | null>(null)
@@ -31,12 +36,15 @@ function UsuariosPage() {
   // Sección "Docentes": por defecto se excluyen los estudiantes
   const { data, isLoading } = useUsers(page, {
     ...filters,
+    search: debouncedSearch || undefined,
     exclude_rol: filters.rol ? undefined : 'ESTUDIANTE',
+    page_size: pageSize,
   })
   const deactivateMutation = useDeactivateUser()
   const activateMutation = useActivateUser()
   const currentUser = useStore(authStore, (s) => s.user)
   const isDirector = currentUser?.rol === 'DIRECTOR'
+  const puedeArmarTuplas = currentUser?.rol === 'DIRECTOR' || currentUser?.rol === 'DTC'
 
   const handleEdit = (user: Usuario) => {
     setEditingUser(user)
@@ -66,7 +74,7 @@ function UsuariosPage() {
   }
 
   return (
-    <AuthGuard allowedRoles={['DIRECTOR', 'DTC']}>
+    <AuthGuard allowedRoles={['DIRECTOR', 'DTC', 'COMITE_EVALUACION']}>
       <div>
       <main>
         <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -80,6 +88,8 @@ function UsuariosPage() {
           </div>
           <div className="flex items-center gap-3">
             <UserFilters
+              search={search}
+              onSearchChange={setSearch}
               onRoleChange={(value) =>
                 setFilters((prev) => ({
                   ...prev,
@@ -115,6 +125,8 @@ function UsuariosPage() {
           </div>
         </div>
 
+        {puedeArmarTuplas && <TuplasPanel />}
+
         <StatsCards
           total={data?.count || 0}
           activos={data?.results.filter((u) => u.is_active).length || 0}
@@ -131,6 +143,11 @@ function UsuariosPage() {
             page={page}
             onPageChange={setPage}
             totalCount={data?.count || 0}
+            pageSize={pageSize}
+            onPageSizeChange={(size) => {
+              setPageSize(size)
+              setPage(1)
+            }}
             onEdit={handleEdit}
             onToggleActive={handleToggleActive}
           />

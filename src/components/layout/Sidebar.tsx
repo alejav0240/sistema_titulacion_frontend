@@ -24,8 +24,8 @@ const NAV_ITEMS: NavItem[] = [
     roles: ['DOCENTE', 'TUTOR', 'TRIBUNAL'],
     exact: true,
   },
-  { label: 'Dashboard', icon: 'dashboard', to: '/admin', roles: ['DIRECTOR', 'DTC'], exact: true },
-  { label: 'Proyectos', icon: 'folder_open', to: '/proyectos', roles: ['DIRECTOR', 'DTC'] },
+  { label: 'Dashboard', icon: 'dashboard', to: '/admin', roles: ['DIRECTOR', 'DTC', 'COMITE_EVALUACION'], exact: true },
+  { label: 'Proyectos', icon: 'folder_open', to: '/proyectos', roles: ['DIRECTOR', 'DTC', 'COMITE_EVALUACION'] },
   {
     label: 'Materias',
     icon: 'school',
@@ -47,20 +47,26 @@ const NAV_ITEMS: NavItem[] = [
   {
     label: 'Docentes',
     icon: 'group',
-    to: '/admin/usuarios',
-    roles: ['DIRECTOR', 'DTC'],
+    to: '/admin/docentes',
+    roles: ['DIRECTOR', 'DTC', 'COMITE_EVALUACION'],
   },
   {
     label: 'Gestión de Materias',
     icon: 'school',
     to: '/admin/materias',
-    roles: ['DIRECTOR', 'DTC'],
+    roles: ['DIRECTOR', 'DTC', 'COMITE_EVALUACION'],
   },
   {
     label: 'Grupos',
     icon: 'category',
     to: '/admin/grupos',
-    roles: ['DIRECTOR', 'DTC'],
+    roles: ['DIRECTOR', 'DTC', 'COMITE_EVALUACION'],
+  },
+  {
+    label: 'Formularios',
+    icon: 'assignment',
+    to: '/formularios',
+    roles: ['DOCENTE', 'TUTOR', 'TRIBUNAL', 'DIRECTOR', 'DTC', 'COMITE_EVALUACION'],
   },
   { label: 'Cronograma', icon: 'calendar_today', to: '/cronograma' },
   { label: 'Notificaciones', icon: 'notifications', to: '/notificaciones' },
@@ -68,7 +74,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Reportes',
     icon: 'bar_chart',
     to: '/admin/reportes',
-    roles: ['DIRECTOR', 'DTC'],
+    roles: ['DIRECTOR', 'DTC', 'COMITE_EVALUACION'],
   },
 ]
 

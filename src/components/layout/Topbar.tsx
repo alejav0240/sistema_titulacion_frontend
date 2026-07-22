@@ -11,7 +11,7 @@ import { ROL_LABELS } from '#/lib/roles'
 const SECTION_LABELS: Array<[string, string]> = [
   ['/student', 'Dashboard'],
   ['/docente', 'Dashboard'],
-  ['/admin/usuarios', 'Usuarios'],
+  ['/admin/docentes', 'Docentes'],
   ['/admin/materias', 'Gestión de Materias'],
   ['/admin/reportes', 'Reportes'],
   ['/admin', 'Dashboard'],

@@ -19,11 +19,15 @@ import type { Usuario } from '#/types/user'
 
 const columnHelper = createColumnHelper<Usuario>()
 
+const PAGE_SIZES = [10, 25, 50]
+
 interface UserTableProps {
   users: Usuario[]
   page: number
   onPageChange: (page: number) => void
   totalCount: number
+  pageSize: number
+  onPageSizeChange: (pageSize: number) => void
   onEdit?: (user: Usuario) => void
   onToggleActive?: (user: Usuario) => void
 }
@@ -44,8 +48,8 @@ const createColumns = (
         .toUpperCase()
       return (
         <Link
-          to="/admin/usuarios/$usuarioId"
-          params={{ usuarioId: String(user.id) }}
+          to="/admin/docentes/$docenteId"
+          params={{ docenteId: String(user.id) }}
           className="flex items-center gap-3"
         >
           <Avatar className="w-10 h-10 border-2 border-transparent group-hover:border-red-900/20 transition-all">
@@ -73,6 +77,32 @@ const createColumns = (
           <RoleBadge key={rol} rol={rol} />
         ))}
       </div>
+    ),
+  }),
+  columnHelper.accessor('cupos_tutor', {
+    header: 'Cupos Tutor',
+    cell: ({ row }) => (
+      <span className="text-sm text-gray-600 dark:text-gray-400">
+        {row.original.tutorados_activos} /{' '}
+        {row.original.cupos_tutor === 0 ? '∞' : row.original.cupos_tutor}
+      </span>
+    ),
+  }),
+  columnHelper.accessor('cupos_tribunal', {
+    header: 'Cupos Tribunal',
+    cell: ({ row }) => (
+      <span className="text-sm text-gray-600 dark:text-gray-400">
+        {row.original.tribunales_activos} /{' '}
+        {row.original.cupos_tribunal === 0 ? '∞' : row.original.cupos_tribunal}
+      </span>
+    ),
+  }),
+  columnHelper.accessor('nivel_tribunal', {
+    header: 'Fortaleza',
+    cell: ({ getValue }) => (
+      <span className="text-sm text-gray-600 dark:text-gray-400">
+        {getValue() ?? '—'}
+      </span>
     ),
   }),
   columnHelper.accessor('is_active', {
@@ -130,6 +160,8 @@ export function UserTable({
   page,
   onPageChange,
   totalCount,
+  pageSize,
+  onPageSizeChange,
   onEdit,
   onToggleActive,
 }: UserTableProps) {
@@ -138,10 +170,10 @@ export function UserTable({
     columns: createColumns(onEdit, onToggleActive),
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
-    pageCount: Math.ceil(totalCount / 10),
+    pageCount: Math.ceil(totalCount / pageSize),
   })
 
-  const totalPages = Math.ceil(totalCount / 10) || 1
+  const totalPages = Math.ceil(totalCount / pageSize) || 1
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
@@ -202,15 +234,19 @@ export function UserTable({
         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span>Mostrar:</span>
           <div className="flex gap-1">
-            <button className="px-2 py-1 bg-red-900/10 text-red-900 dark:text-red-400 rounded text-sm font-medium">
-              10
-            </button>
-            <button className="px-2 py-1 hover:bg-white dark:hover:bg-zinc-800 rounded text-sm text-gray-500 dark:text-gray-400 transition-colors">
-              25
-            </button>
-            <button className="px-2 py-1 hover:bg-white dark:hover:bg-zinc-800 rounded text-sm text-gray-500 dark:text-gray-400 transition-colors">
-              50
-            </button>
+            {PAGE_SIZES.map((size) => (
+              <button
+                key={size}
+                onClick={() => onPageSizeChange(size)}
+                className={
+                  size === pageSize
+                    ? 'px-2 py-1 bg-red-900/10 text-red-900 dark:text-red-400 rounded text-sm font-medium'
+                    : 'px-2 py-1 hover:bg-white dark:hover:bg-zinc-800 rounded text-sm text-gray-500 dark:text-gray-400 transition-colors'
+                }
+              >
+                {size}
+              </button>
+            ))}
           </div>
         </div>
         <div className="flex items-center gap-4">

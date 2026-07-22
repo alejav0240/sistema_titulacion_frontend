@@ -91,6 +91,7 @@ export function useUsers(
     exclude_rol?: string
     estado?: string
     search?: string
+    page_size?: number
   },
 ) {
   return useQuery({
@@ -102,6 +103,7 @@ export function useUsers(
       if (filters?.exclude_rol) params.set('exclude_rol', filters.exclude_rol)
       if (filters?.estado) params.set('estado', filters.estado)
       if (filters?.search) params.set('search', filters.search)
+      if (filters?.page_size) params.set('page_size', String(filters.page_size))
       const { data } = await api.get<UsersResponse>(`/api/users/?${params}`)
       return data
     },

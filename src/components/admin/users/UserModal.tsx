@@ -36,6 +36,7 @@ const userSchema = z.object({
     'ESTUDIANTE',
     'DIRECTOR',
     'DTC',
+    'COMITE_EVALUACION',
   ]),
   subroles: z.array(z.string()).optional(),
   sendEmail: z.boolean().optional(),
@@ -287,6 +288,7 @@ export function UserModal({ open, onOpenChange, user }: UserModalProps) {
                         <SelectItem value="DOCENTE">Docente</SelectItem>
                         <SelectItem value="DIRECTOR">Director</SelectItem>
                         <SelectItem value="DTC">DTC</SelectItem>
+                        <SelectItem value="COMITE_EVALUACION">Comité de Evaluación</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
