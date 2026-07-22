@@ -58,12 +58,25 @@ export function UserSearchCombobox({
                 {initials(usuario.nombre)}
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-label-md text-on-surface">
+                <span
+                  className="block truncate text-label-md text-on-surface"
+                  title={usuario.nombre}
+                >
                   {usuario.nombre}
                 </span>
-                <span className="block truncate text-label-sm text-outline">
+                <span
+                  className="block truncate text-label-sm text-outline"
+                  title={`${usuario.email} · ${usuario.rol}`}
+                >
                   {usuario.email} · {usuario.rol}
                 </span>
+                {usuario.rol === 'DOCENTE' && (
+                  <span className="block truncate text-label-sm text-outline">
+                    Cupos: {usuario.tutorados_activos}/{usuario.cupos_tutor || '∞'} tutor ·{' '}
+                    {usuario.tribunales_activos}/{usuario.cupos_tribunal || '∞'} tribunal
+                    {usuario.nivel_tribunal && ` · ${usuario.nivel_tribunal}`}
+                  </span>
+                )}
               </span>
             </button>
           ))}

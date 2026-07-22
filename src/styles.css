@@ -257,6 +257,11 @@ code {
   border: 1px solid #e2e8f0;
 }
 
+.dark .glass-card {
+  background: rgba(53, 53, 54, 0.7);
+  border: 1px solid var(--color-outline-variant);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

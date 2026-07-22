@@ -55,3 +55,5 @@ mcp-todos.json
 
 # Vite
 .vite
+
+testsprite_tests/tmp/config.json

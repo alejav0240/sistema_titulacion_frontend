@@ -56,7 +56,7 @@ export function ProjectsKanban({ proyectos }: { proyectos: Proyecto[] }) {
                   className="w-full rounded-lg border border-outline-variant bg-white p-md text-left shadow-sm transition-all hover:border-primary"
                 >
                   <p className="line-clamp-2 text-label-md font-bold text-on-surface">
-                    {proyecto.titulo}
+                    {proyecto.titulo || 'Tema pendiente'}
                   </p>
                   <p className="mt-xs text-[10px] uppercase tracking-wider text-outline">
                     {proyecto.codigo}
@@ -66,8 +66,8 @@ export function ProjectsKanban({ proyectos }: { proyectos: Proyecto[] }) {
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary-container text-[9px] font-bold text-on-secondary-container">
                         {initials(proyecto.estudiante_nombre)}
                       </span>
-                      <span className="text-label-sm text-on-surface-variant">
-                        {proyecto.estudiante_nombre.split(' ')[0]}
+                      <span className="max-w-[9rem] truncate text-label-sm text-on-surface-variant">
+                        {proyecto.estudiante_nombre}
                       </span>
                     </div>
                     {proyecto.observaciones_pendientes > 0 && (

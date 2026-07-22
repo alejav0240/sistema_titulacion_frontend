@@ -3,6 +3,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { useCallback, useRef } from 'react'
 import api from '#/lib/api'
 import type {
   CategoriaNotificacion,
@@ -13,6 +14,7 @@ export function useNotifications(filters?: {
   categoria?: CategoriaNotificacion | ''
   leido?: boolean
   page?: number
+  enviadas?: boolean
 }) {
   return useQuery({
     queryKey: ['notifications', filters],
@@ -21,6 +23,7 @@ export function useNotifications(filters?: {
       if (filters?.categoria) params.categoria = filters.categoria
       if (filters?.leido !== undefined) params.leido = filters.leido
       if (filters?.page) params.page = filters.page
+      if (filters?.enviadas) params.enviadas = 'true'
       const { data } = await api.get<NotificacionesResponse>(
         '/api/notifications/',
         { params },
@@ -68,6 +71,54 @@ export function useMarkAllRead() {
       qc.invalidateQueries({ queryKey: ['notifications-unread-count'] })
     },
   })
+}
+
+/**
+ * Marca una notificación como leída cuando su elemento entra al viewport
+ * del contenedor con scroll (no el viewport de la página) — un ítem fuera
+ * de vista por `overflow-y: auto/scroll` simplemente no intersecta y no se
+ * marca, sin lógica manual de scroll.
+ *
+ * Uso: `ref={setContainer}` en el div con overflow-y, y
+ * `ref={registerItem} data-notification-id={n.id}` en cada ítem no leído.
+ */
+export function useMarkReadOnVisible() {
+  const markRead = useMarkRead()
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const markedRef = useRef(new Set<number>())
+  const pendingElsRef = useRef<HTMLElement[]>([])
+  const markReadRef = useRef(markRead)
+  markReadRef.current = markRead
+
+  const onIntersect: IntersectionObserverCallback = (entries, observer) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue
+      const id = Number((entry.target as HTMLElement).dataset.notificationId)
+      if (!id || markedRef.current.has(id)) continue
+      markedRef.current.add(id)
+      markReadRef.current.mutate(id)
+      observer.unobserve(entry.target)
+    }
+  }
+
+  const setContainer = useCallback((root: HTMLElement | null) => {
+    observerRef.current?.disconnect()
+    observerRef.current = null
+    if (!root) return
+    const observer = new IntersectionObserver(onIntersect, { root, threshold: 0.6 })
+    observerRef.current = observer
+    for (const el of pendingElsRef.current) observer.observe(el)
+    pendingElsRef.current = []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const registerItem = useCallback((el: HTMLElement | null) => {
+    if (!el) return
+    if (observerRef.current) observerRef.current.observe(el)
+    else pendingElsRef.current.push(el)
+  }, [])
+
+  return { setContainer, registerItem }
 }
 
 export function useSendNotification() {

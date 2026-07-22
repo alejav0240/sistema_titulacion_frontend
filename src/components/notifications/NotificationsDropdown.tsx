@@ -7,7 +7,7 @@ import {
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import {
   useMarkAllRead,
-  useMarkRead,
+  useMarkReadOnVisible,
   useNotifications,
   useUnreadCount,
 } from '#/hooks/useNotifications'
@@ -25,8 +25,8 @@ export const CATEGORIA_ICONS: Record<CategoriaNotificacion, string> = {
 export function NotificationsDropdown() {
   const unread = useUnreadCount()
   const notifications = useNotifications({ page: 1 })
-  const markRead = useMarkRead()
   const markAllRead = useMarkAllRead()
+  const { setContainer, registerItem } = useMarkReadOnVisible()
 
   const items = notifications.data?.results.slice(0, 5) ?? []
 
@@ -62,7 +62,7 @@ export function NotificationsDropdown() {
             Marcar todas como leídas
           </button>
         </div>
-        <div className="thin-scrollbar max-h-80 overflow-y-auto">
+        <div ref={setContainer} className="thin-scrollbar max-h-80 overflow-y-auto">
           {items.length === 0 && (
             <p className="px-md py-lg text-center text-body-sm text-outline">
               Sin notificaciones
@@ -72,9 +72,8 @@ export function NotificationsDropdown() {
             <button
               key={n.id}
               type="button"
-              onClick={() => {
-                if (!n.leido) markRead.mutate(n.id)
-              }}
+              ref={!n.leido ? registerItem : undefined}
+              data-notification-id={n.id}
               className={cn(
                 'flex w-full items-start gap-sm px-md py-sm text-left transition-colors hover:bg-surface-container-low',
                 !n.leido && 'bg-primary-fixed/20',

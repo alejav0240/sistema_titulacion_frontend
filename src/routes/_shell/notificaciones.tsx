@@ -65,9 +65,11 @@ function NotificacionesPage() {
   const [categoria, setCategoria] = useState<CategoriaNotificacion | ''>('')
   const [page, setPage] = useState(1)
   const [notifOpen, setNotifOpen] = useState(false)
+  const [vista, setVista] = useState<'recibidas' | 'enviadas'>('recibidas')
   const user = useStore(authStore, (s) => s.user)
   const puedeNotificar = user?.rol !== 'ESTUDIANTE'
-  const notifications = useNotifications({ categoria, page })
+  const enviadas = vista === 'enviadas'
+  const notifications = useNotifications({ categoria, page, enviadas })
   const markRead = useMarkRead()
   const markAllRead = useMarkAllRead()
 
@@ -103,19 +105,44 @@ function NotificacionesPage() {
               Enviar notificación
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => markAllRead.mutate()}
-            className="flex items-center gap-xs rounded-lg bg-primary-container px-md py-sm text-label-md font-bold text-on-primary transition-all hover:brightness-110"
-          >
-            <MaterialIcon name="done_all" size={18} />
-            Marcar todo como leído
-          </button>
+          {!enviadas && (
+            <button
+              type="button"
+              onClick={() => markAllRead.mutate()}
+              className="flex items-center gap-xs rounded-lg bg-primary-container px-md py-sm text-label-md font-bold text-on-primary transition-all hover:brightness-110"
+            >
+              <MaterialIcon name="done_all" size={18} />
+              Marcar todo como leído
+            </button>
+          )}
         </div>
       </section>
 
       {puedeNotificar && (
         <SendNotificationModal open={notifOpen} onClose={() => setNotifOpen(false)} />
+      )}
+
+      {puedeNotificar && (
+        <div className="flex gap-sm">
+          {(['recibidas', 'enviadas'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => {
+                setVista(v)
+                setPage(1)
+              }}
+              className={cn(
+                'rounded-full px-md py-sm text-label-md capitalize transition-all',
+                vista === v
+                  ? 'bg-primary font-bold text-[#fff]'
+                  : 'border border-outline-variant bg-white text-on-surface-variant hover:text-primary',
+              )}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
       )}
 
       {/* Tabs por categoría */}
@@ -154,10 +181,10 @@ function NotificacionesPage() {
                 <button
                   key={n.id}
                   type="button"
-                  onClick={() => !n.leido && markRead.mutate(n.id)}
+                  onClick={() => !enviadas && !n.leido && markRead.mutate(n.id)}
                   className={cn(
                     'flex w-full items-start gap-md rounded-xl border p-md text-left transition-all',
-                    n.leido
+                    enviadas || n.leido
                       ? 'border-outline-variant bg-white'
                       : n.categoria === 'RECORDATORIO'
                         ? 'border-error/40 bg-error-container/30'
@@ -192,13 +219,19 @@ function NotificacionesPage() {
                     <p className="text-body-sm text-on-surface-variant">
                       {n.mensaje}
                     </p>
-                    {n.emisor_nombre && (
-                      <p className="mt-xs text-label-sm text-outline">
-                        De: {n.emisor_nombre}
-                      </p>
-                    )}
+                    {enviadas
+                      ? n.destinatario_nombre && (
+                          <p className="mt-xs text-label-sm text-outline">
+                            Para: {n.destinatario_nombre}
+                          </p>
+                        )
+                      : n.emisor_nombre && (
+                          <p className="mt-xs text-label-sm text-outline">
+                            De: {n.emisor_nombre}
+                          </p>
+                        )}
                   </div>
-                  {!n.leido && (
+                  {!enviadas && !n.leido && (
                     <span className="mt-sm h-2 w-2 shrink-0 rounded-full bg-primary-container" />
                   )}
                 </button>

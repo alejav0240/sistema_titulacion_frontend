@@ -15,6 +15,7 @@ export interface Notificacion {
   leido: boolean
   link: string
   emisor_nombre: string | null
+  destinatario_nombre: string | null
   created_at: string
 }
 

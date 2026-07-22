@@ -34,7 +34,7 @@ export const Route = createFileRoute('/_shell/admin/reportes')({
 
 function RouteComponent() {
   return (
-    <AuthGuard allowedRoles={['DIRECTOR', 'DTC']}>
+    <AuthGuard allowedRoles={['DIRECTOR', 'DTC', 'COMITE_EVALUACION']}>
       <ReportesPage />
     </AuthGuard>
   )
