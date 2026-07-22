@@ -4,7 +4,6 @@ import { useStore } from '@tanstack/react-store'
 import { z } from 'zod'
 import { CommentPopover } from '#/components/pdf/CommentPopover'
 import { ObservationsPanel } from '#/components/pdf/ObservationsPanel'
-import { RevisionBreakdown } from '#/components/projects/RevisionRow'
 import { NuevaVersionModal } from '#/components/projects/NuevaVersionModal'
 import { PdfViewer } from '#/components/pdf/PdfViewer'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
@@ -76,7 +75,13 @@ function RevisionPage() {
     (r) => r.revisor_id === user?.id,
   )
   const puedeAprobar =
-    ['DIRECTOR', 'DTC'].includes(user?.rol ?? '') || isMiembroRevision
+    ['DIRECTOR', 'DTC', 'COMITE_EVALUACION'].includes(user?.rol ?? '') || isMiembroRevision
+  const miRevision = (version.data?.revisiones ?? []).find((r) => r.revisor_id === user?.id)
+  const yaDecidio = miRevision ? miRevision.estado !== 'PENDIENTE' : false
+  // Solo el tutor apela una observación (nunca el estudiante ni un tribunal).
+  const puedeApelar = (version.data?.revisiones ?? []).some(
+    (r) => r.revisor_id === user?.id && r.rol_revision === 'TUTOR',
+  )
   const compareVersion = versions.data?.find((v) => v.id === compare)
 
   // La corrección siempre se dibuja en la versión más nueva, nunca en el
@@ -88,6 +93,8 @@ function RevisionPage() {
   const ultimaVersion = (versions.data ?? []).find(
     (v) => v.numero_version === maxNumeroVersion,
   )
+  // Solo se pueden crear observaciones nuevas sobre la última versión.
+  const esVersionActual = (version.data?.numero_version ?? -1) === maxNumeroVersion
 
   const iniciarSubsanacion = (annotationId: number) => {
     const actual = version.data?.numero_version ?? 0
@@ -128,6 +135,20 @@ function RevisionPage() {
         <div className="flex items-center gap-lg">
           <button
             type="button"
+            onClick={() =>
+              navigate({
+                to: '/proyectos/$proyectoId',
+                params: { proyectoId: String(version.data?.proyecto) },
+              })
+            }
+            disabled={!version.data?.proyecto}
+            className="rounded-lg border border-outline-variant p-sm text-on-surface-variant transition-colors hover:text-primary disabled:opacity-50"
+            aria-label="Volver al proyecto"
+          >
+            <MaterialIcon name="arrow_back" size={18} />
+          </button>
+          <button
+            type="button"
             onClick={toggleCompare}
             disabled={(versions.data?.length ?? 0) < 2}
             className={cn(
@@ -158,18 +179,18 @@ function RevisionPage() {
               <button
                 type="button"
                 onClick={() => review.mutate({ versionId: id, accion: 'APROBAR' })}
-                disabled={review.isPending}
+                disabled={review.isPending || yaDecidio}
                 className="rounded-lg bg-green-600 px-md py-sm text-label-sm font-bold uppercase text-[#fff] hover:bg-green-700 disabled:opacity-50"
               >
-                Aprobar versión
+                {miRevision?.estado === 'APROBADO' ? 'Ya aprobaste' : 'Aprobar versión'}
               </button>
               <button
                 type="button"
                 onClick={() => review.mutate({ versionId: id, accion: 'OBSERVAR' })}
-                disabled={review.isPending}
+                disabled={review.isPending || yaDecidio}
                 className="rounded-lg border border-primary px-md py-sm text-label-sm font-bold uppercase text-primary hover:bg-primary/5 disabled:opacity-50"
               >
-                Marcar observada
+                {miRevision?.estado === 'OBSERVADO' ? 'Ya observaste' : 'Marcar observada'}
               </button>
             </div>
           )}
@@ -237,18 +258,13 @@ function RevisionPage() {
         </div>
       </header>
 
-      {(version.data?.revisiones ?? []).length > 0 && (
-        <div className="border-b border-outline-variant bg-surface-container-lowest px-container-margin py-sm">
-          <RevisionBreakdown revisiones={version.data?.revisiones ?? []} />
-        </div>
-      )}
-
       {/* Área de contenido: panel observaciones + PDF */}
       <div className="flex flex-1 overflow-hidden">
         <ObservationsPanel
           annotations={annotations.data ?? []}
           isRevisor={isRevisor}
           isOwner={isOwner}
+          puedeApelar={puedeApelar}
           currentUserId={user?.id ?? null}
           selectedId={selectedId}
           onSelect={handleSelect}
@@ -259,6 +275,7 @@ function RevisionPage() {
             setSubsanarTarget(null)
             setPendingSubsanarId(null)
           }}
+          revisiones={version.data?.revisiones ?? []}
         />
 
         {soloObservaciones ? (
@@ -289,6 +306,7 @@ function RevisionPage() {
               )}
               <PdfViewer
                 fileUrl={versionPdfUrl(id)}
+                versionId={id}
                 pageNumber={pageLeft}
                 scale={scale}
                 annotations={annotations.data ?? []}
@@ -317,8 +335,8 @@ function RevisionPage() {
                   </button>
                 </div>
               )}
-              {/* FAB añadir observación */}
-              {isRevisor && (
+              {/* FAB añadir observación (solo en la última versión) */}
+              {isRevisor && esVersionActual && (
                 <div className="absolute right-xl top-xl z-10">
                   <button
                     type="button"
@@ -353,6 +371,7 @@ function RevisionPage() {
                 </p>
                 <PdfViewer
                   fileUrl={versionPdfUrl(compare)}
+                  versionId={compare}
                   pageNumber={pageRight}
                   scale={scale}
                   annotations={compareAnnotations.data ?? []}

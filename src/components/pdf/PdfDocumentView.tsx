@@ -40,6 +40,7 @@ function rectStyle(rect: {
 
 export default function PdfDocumentView({
   fileUrl,
+  versionId,
   pageNumber,
   scale,
   annotations,
@@ -51,6 +52,8 @@ export default function PdfDocumentView({
   className,
 }: {
   fileUrl: string
+  /** Versión efectivamente mostrada en este visor: filtra qué observación/corrección se dibuja aquí. */
+  versionId: number
   pageNumber: number
   scale: number
   annotations: Anotacion[]
@@ -151,11 +154,16 @@ export default function PdfDocumentView({
   }
 
   const pageAnnotations = annotations.filter(
-    (a) => a.nota_observacion && a.nota_observacion.pagina === pageNumber,
+    (a) => a.nota_observacion && a.nota_observacion.pagina === pageNumber && a.version === versionId,
   )
 
+  // La corrección se dibuja solo en la versión donde el estudiante la marcó
+  // (`version_correccion`), nunca en la versión vieja de la observación original.
   const pageCorrections = annotations.filter(
-    (a) => a.nota_correccion && a.nota_correccion.pagina === pageNumber,
+    (a) =>
+      a.nota_correccion &&
+      a.nota_correccion.pagina === pageNumber &&
+      a.version_correccion === versionId,
   )
 
   return (

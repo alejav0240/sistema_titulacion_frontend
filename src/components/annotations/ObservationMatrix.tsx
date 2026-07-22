@@ -111,6 +111,14 @@ export function ObservationMatrix({ observaciones }: { observaciones: Anotacion[
                     >
                       {ESTADO_LABEL[anotacion.estado]}
                     </span>
+                    {anotacion.veces_reobservada >= 2 && (
+                      <span
+                        title="Reobservada 2 o más veces: se alertó a Director/DTC/Comité"
+                        className="ml-xs rounded-full bg-error-container px-sm py-[2px] text-[9px] font-bold uppercase text-on-error-container"
+                      >
+                        {anotacion.veces_reobservada}x reobservada
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

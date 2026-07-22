@@ -32,6 +32,7 @@ export interface Anotacion {
   nota_observacion: NotaComentario | null
   nota_correccion: NotaComentario | null
   version_correccion: number | null
+  veces_reobservada: number
   creado_el: string
   subsanada_el: string | null
   corregido_el: string | null

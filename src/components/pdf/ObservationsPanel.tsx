@@ -2,28 +2,34 @@ import { useState } from 'react'
 import { ObservationCard } from './ObservationCard'
 import { MaterialIcon } from '#/components/ui/MaterialIcon'
 import { useAprobarMasivo } from '#/hooks/useAnnotations'
+import { RevisionBreakdown } from '#/components/projects/RevisionRow'
 import type { Anotacion, RectNormalizado } from '#/types/annotation'
+import type { Version } from '#/types/project'
 
 export function ObservationsPanel({
   annotations,
   isRevisor,
   isOwner,
+  puedeApelar,
   currentUserId,
   selectedId,
   onSelect,
   onSubsanarDraw,
   subsanarDraft,
   onSubsanarReset,
+  revisiones,
 }: {
   annotations: Anotacion[]
   isRevisor: boolean
   isOwner: boolean
+  puedeApelar?: boolean
   currentUserId?: number | null
   selectedId: number | null
   onSelect: (anotacion: Anotacion) => void
   onSubsanarDraw?: (id: number) => void
   subsanarDraft?: (RectNormalizado & { targetId: number }) | null
   onSubsanarReset?: () => void
+  revisiones?: Version['revisiones']
 }) {
   const pendientes = annotations.filter((a) => a.estado === 'PENDIENTE').length
   const [seleccionadas, setSeleccionadas] = useState<Set<number>>(new Set())
@@ -85,6 +91,7 @@ export function ObservationsPanel({
             anotacion={anotacion}
             isRevisor={isRevisor}
             isOwner={isOwner}
+            puedeApelar={puedeApelar}
             currentUserId={currentUserId}
             selected={selectedId === anotacion.id}
             checked={seleccionadas.has(anotacion.id)}
@@ -102,6 +109,12 @@ export function ObservationsPanel({
           />
         ))}
       </div>
+
+      {revisiones && revisiones.length > 0 && (
+        <div className="mt-auto border-t border-outline-variant p-sm">
+          <RevisionBreakdown revisiones={revisiones} />
+        </div>
+      )}
     </section>
   )
 }

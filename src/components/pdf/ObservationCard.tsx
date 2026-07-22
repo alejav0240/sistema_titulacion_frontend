@@ -15,7 +15,7 @@ import type { Anotacion, RectNormalizado } from '#/types/annotation'
 const EVENTO_LABELS: Record<string, string> = {
   CREACION: 'Observación creada',
   SUBSANACION: 'Subsanada por el estudiante',
-  APELACION: 'Apelada por el estudiante',
+  APELACION: 'Apelada por el tutor',
   APROBACION: 'Corrección aprobada',
   REOBSERVACION: 'Observada de nuevo',
 }
@@ -57,6 +57,7 @@ export function ObservationCard({
   anotacion,
   isRevisor,
   isOwner,
+  puedeApelar,
   currentUserId,
   selected,
   checked,
@@ -69,6 +70,7 @@ export function ObservationCard({
   anotacion: Anotacion
   isRevisor: boolean
   isOwner: boolean
+  puedeApelar?: boolean
   currentUserId?: number | null
   selected: boolean
   checked?: boolean
@@ -215,30 +217,34 @@ export function ObservationCard({
             </div>
           )}
 
-          {/* Acciones del estudiante sobre pendientes */}
-          {isOwner && anotacion.estado === 'PENDIENTE' && !subsanando && !apelando && (
+          {/* Acciones sobre pendientes: subsanar (estudiante) y apelar (tutor) */}
+          {anotacion.estado === 'PENDIENTE' && !subsanando && !apelando && (
             <div className="flex gap-xs">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setSubsanando(true)
-                }}
-                className="rounded bg-primary-container px-sm py-1 text-[10px] font-bold uppercase text-on-primary transition-all hover:opacity-90"
-              >
-                Subsanar
-              </button>
-              <button
-                type="button"
-                title="Apelar la observación con un comentario, sin modificar el documento"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setApelando(true)
-                }}
-                className="rounded border border-primary px-sm py-1 text-[10px] font-bold uppercase text-primary transition-colors hover:bg-primary/5"
-              >
-                Apelar
-              </button>
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSubsanando(true)
+                  }}
+                  className="rounded bg-primary-container px-sm py-1 text-[10px] font-bold uppercase text-on-primary transition-all hover:opacity-90"
+                >
+                  Subsanar
+                </button>
+              )}
+              {puedeApelar && (
+                <button
+                  type="button"
+                  title="Apelar la observación con un comentario, sin modificar el documento"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setApelando(true)
+                  }}
+                  className="rounded border border-primary px-sm py-1 text-[10px] font-bold uppercase text-primary transition-colors hover:bg-primary/5"
+                >
+                  Apelar
+                </button>
+              )}
             </div>
           )}
         </div>
